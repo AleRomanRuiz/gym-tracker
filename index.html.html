@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BULK 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--border:#2a2a3a;--text:#e8e8f0;--text2:#888899;--text3:#55556a;--accent:#c8f060;--accent2:#60d0f0;--up:#4cdb7a;--down:#f04c4c;--mod:#b060f0;--warn:#f0b040;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;overflow-x:hidden;}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;}
+.logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;letter-spacing:2px;color:var(--accent);}
+.logo span{color:var(--text3);}
+.nav-tabs{display:flex;gap:2px;}
+.nav-tab{padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;color:var(--text3);transition:all .2s;border:none;background:transparent;}
+.nav-tab.active{background:var(--accent);color:#0a0a0f;}
+.page{display:none;padding:72px 0 80px;min-height:100vh;}
+.page.active{display:block;}
+.micro-header{padding:16px;display:flex;align-items:center;justify-content:space-between;}
+.micro-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:28px;letter-spacing:1px;}
+.micro-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text2);}
+.calendar-strip{padding:0 12px 14px;}
+.cal-week{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;}
+.cal-day{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;}
+.cal-day .dlabel{font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;}
+.cal-day.training{background:var(--surface2);border-color:rgba(200,240,96,.4);}
+.cal-day.training .dlabel{color:var(--accent);}
+.cal-day.rest-day{border-style:dashed;opacity:.6;}
+.cal-day.done{opacity:.35;}
+.cal-day.current{background:var(--accent);border-color:var(--accent);}
+.cal-day.current .dlabel{color:#0a0a0f;font-weight:700;}
+.cdot{width:5px;height:5px;border-radius:50%;margin-top:2px;}
+.cdot.push{background:var(--accent);}.cdot.pull{background:var(--accent2);}.cdot.legs{background:var(--warn);}.cdot.rd{background:var(--border);}
+.stats-bar{display:flex;gap:8px;padding:0 12px 12px;overflow-x:auto;scrollbar-width:none;}
+.stats-bar::-webkit-scrollbar{display:none;}
+.stat-card{min-width:105px;padding:11px 13px;border-radius:10px;background:var(--surface);border:1px solid var(--border);}
+.slabel{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.svalue{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:21px;color:var(--accent);}
+.ssub{font-size:11px;color:var(--text2);margin-top:2px;}
+.close-banner{margin:0 12px 12px;padding:13px 16px;border-radius:12px;background:rgba(200,240,96,.06);border:1px solid rgba(200,240,96,.22);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.close-text{font-size:13px;color:var(--accent);font-weight:600;}
+.close-text small{display:block;font-size:11px;color:var(--text3);font-weight:400;margin-top:2px;}
+.close-btn{padding:8px 14px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:12px;border:none;cursor:pointer;white-space:nowrap;}
+.sec-label{padding:7px 12px 5px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+.bw-row{display:flex;gap:8px;padding:0 12px 10px;}
+.bw-inp{flex:1;padding:10px 13px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;font-family:'Barlow',sans-serif;outline:none;}
+.bw-inp:focus{border-color:var(--accent);}
+.bw-btn{padding:10px 16px;border-radius:10px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:13px;border:none;cursor:pointer;}
+.log-list{margin:0 12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);overflow:hidden;display:none;}
+.log-entry{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);}
+.log-entry:last-child{border-bottom:none;}
+.log-day{font-size:12px;color:var(--text3);min-width:32px;}
+.log-vals{display:flex;gap:12px;font-size:13px;font-weight:500;flex:1;padding:0 10px;}
+.log-w{color:var(--accent);}.log-c{color:var(--accent2);}
+.log-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:2px 6px;border-radius:5px;}
+.log-del:hover{color:var(--down);}
+.session{margin:0 12px 12px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--surface);}
+.session-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;background:var(--surface2);}
+.sname{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:.5px;}
+.stag{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;}
+.schev{color:var(--text3);font-size:18px;transition:transform .2s;}
+.session.open .schev{transform:rotate(180deg);}
+.session-body{display:none;}
+.session.open .session-body{display:block;}
+.exercise{border-bottom:1px solid var(--border);padding:11px 16px;}
+.exercise:last-child{border-bottom:none;}
+.ex-name{font-weight:500;font-size:14px;margin-bottom:3px;}
+.ex-obs{font-size:11px;color:var(--text3);margin-bottom:7px;font-style:italic;}
+.sets-container{display:flex;flex-wrap:wrap;gap:5px;}
+.set-pill{display:flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .15s;}
+.set-pill .kg{color:var(--accent);font-weight:700;}
+.set-pill .rp{color:var(--text2);}
+.set-pill .tp{font-size:10px;color:var(--text3);}
+.set-pill.up{border-color:var(--up);background:rgba(76,219,122,.08);}
+.set-pill.down{border-color:var(--down);background:rgba(240,76,76,.08);}
+.ex-rir{font-size:10px;color:var(--text3);margin-top:5px;}
+.rest-block{margin:0 12px 12px;padding:13px 16px;border-radius:12px;border:1px dashed var(--border);display:flex;align-items:center;gap:10px;}
+.rest-ico{font-size:18px;}.rest-lbl{font-size:13px;color:var(--text3);font-style:italic;}
+.add-set-btn{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;border:1px dashed var(--border);background:transparent;color:var(--text3);cursor:pointer;transition:all .2s;}
+.add-set-btn:hover{border-color:var(--accent);color:var(--accent);}
+.tt-bar{display:flex;align-items:center;gap:8px;padding:0 12px 10px;}
+.tt-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.tt-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.tt-btn:disabled{opacity:.25;cursor:default;}
+.tt-label{flex:1;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;letter-spacing:.5px;}
+.tt-sub{font-size:11px;color:var(--text3);text-align:center;margin-bottom:10px;padding:0 12px;}
+.hist-filters{display:flex;gap:8px;padding:0 12px 14px;overflow-x:auto;scrollbar-width:none;}
+.hist-filters::-webkit-scrollbar{display:none;}
+.filt-btn{white-space:nowrap;padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .2s;}
+.filt-btn.active{background:var(--accent);color:#0a0a0f;border-color:var(--accent);}
+.hist-ex{margin:0 12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);overflow:hidden;}
+.hist-ex-hdr{padding:11px 16px;background:var(--surface2);display:flex;justify-content:space-between;align-items:center;}
+.hex-name{font-weight:600;font-size:14px;}
+.htrend{font-size:12px;font-weight:600;}
+.htrend.up{color:var(--up);}.htrend.down{color:var(--down);}.htrend.flat{color:var(--text3);}
+.hist-table{width:100%;border-collapse:collapse;}
+.hist-table td{padding:7px 16px;font-size:12px;border-bottom:1px solid var(--border);}
+.hist-table tr:last-child td{border-bottom:none;}
+.mnum{color:var(--text3);font-size:11px;}
+.sets-row{display:flex;flex-wrap:wrap;gap:4px;}
+.mpill{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--surface2);}
+.mpill.up{border-color:var(--up);color:var(--up);background:rgba(76,219,122,.08);}
+.mpill.down{border-color:var(--down);color:var(--down);background:rgba(240,76,76,.08);}
+.dash-sec{padding:0 12px 22px;}
+.dash-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;letter-spacing:.5px;margin-bottom:11px;color:var(--text2);text-transform:uppercase;}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.dcard{padding:15px;border-radius:12px;background:var(--surface);border:1px solid var(--border);}
+.dcard.wide{grid-column:1/-1;}
+.dlabel{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.dvalue{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:27px;}
+.dvalue.ac{color:var(--accent);}.dvalue.up{color:var(--up);}
+.dsub{font-size:11px;color:var(--text2);margin-top:3px;}
+.chart-wrap{position:relative;height:140px;margin-top:8px;}
+canvas{width:100%!important;}
+.goal-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.goal-lbl{font-size:11px;color:var(--text2);min-width:70px;font-weight:600;}
+.goal-inp{flex:1;padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;}
+.goal-inp:focus{border-color:var(--accent);}
+.goal-save{padding:8px 13px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:12px;border:none;cursor:pointer;}
+.prog-wrap{background:var(--surface2);border-radius:6px;height:7px;overflow:hidden;margin-top:5px;}
+.prog-bar{height:100%;border-radius:6px;background:var(--accent);transition:width .4s;}
+.prog-bar.danger{background:var(--down);}
+.goal-eta{font-size:11px;color:var(--text2);margin-top:5px;line-height:1.5;}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);display:flex;padding:8px 0;}
+.bbot{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px;border:none;background:transparent;color:var(--text3);transition:color .2s;}
+.bbot.active{color:var(--accent);}
+.bbot svg{width:22px;height:22px;}
+.bbot span{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0a0a0f;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:all .3s;z-index:400;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:480px;animation:slideUp .25s ease;max-height:85vh;overflow-y:auto;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:18px;}
+.mrow{display:flex;gap:10px;margin-bottom:11px;}
+.mfield{flex:1;}
+.mfield label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;}
+.mfield input,.mfield select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:'Barlow',sans-serif;outline:none;}
+.mfield input:focus{border-color:var(--accent);}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
+.btn{flex:1;padding:13px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#0a0a0f;}
+.btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-danger{background:rgba(240,76,76,.13);color:var(--down);border:1px solid rgba(240,76,76,.28);}
+.full-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;}
+.full-overlay.open{display:flex;}
+.fbox{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:26px 22px;max-width:360px;width:100%;}
+.fbox-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;margin-bottom:6px;}
+.fbox-sub{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:18px;}
+.summary{background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:14px;}
+.summary-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;}
+.summary-row .val{color:var(--accent);font-weight:600;}
+.sfield{margin-bottom:14px;}
+.sfield label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;}
+.sfield input{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:16px;font-family:'Barlow',sans-serif;outline:none;}
+.sfield input:focus{border-color:var(--accent);}
+.alert-card{margin:0 12px 11px;padding:11px 15px;border-radius:10px;background:rgba(240,76,76,.08);border:1px solid rgba(240,76,76,.22);font-size:13px;color:var(--down);}
+.alert-card strong{display:block;font-weight:700;margin-bottom:2px;}
+.page-header{padding:16px 12px 8px;}
+.page-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;letter-spacing:1px;}
+.page-sub{font-size:13px;color:var(--text3);margin-top:2px;}
+.ldot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
+/* EDITOR PANEL */
+.editor-panel{margin:0 12px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);overflow:hidden;}
+.editor-hdr{padding:12px 16px;background:var(--surface2);display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.editor-hdr-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;}
+.editor-body{padding:16px;display:none;}
+.editor-body.open{display:block;}
+.code-block{background:#0a0a0f;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;font-family:monospace;color:var(--accent2);overflow-x:auto;margin:8px 0;line-height:1.6;white-space:pre;}
+.editor-step{font-size:12px;color:var(--text2);margin:10px 0 4px;line-height:1.5;}
+.editor-step strong{color:var(--text);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">BULK<span>26</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('micro')">Micro</button>
+    <button class="nav-tab" onclick="showPage('hist')">Histórico</button>
+    <button class="nav-tab" onclick="showPage('dash')">Stats</button>
+    <button class="nav-tab" onclick="showPage('edit')">Editor</button>
+  </div>
+</nav>
+
+<!-- MICRO PAGE -->
+<div class="page active" id="page-micro">
+  <div class="micro-header">
+    <div>
+      <div class="micro-title" id="micro-title">Microciclo 1</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:2px;">nueva etapa · base M0 cargada</div>
+    </div>
+    <div class="micro-badge" id="micro-badge">Activo</div>
+  </div>
+  <div class="calendar-strip"><div class="cal-week" id="cal-week"></div></div>
+  <div class="stats-bar" id="stats-bar"></div>
+  <div class="close-banner">
+    <div class="close-text">¿Listo para cerrar el microciclo?<small>Archiva en histórico y prepara el siguiente</small></div>
+    <button class="close-btn" onclick="openCloseMicro()">Cerrar M<span id="close-mnum">1</span></button>
+  </div>
+  <div class="sec-label">📊 Registro diario</div>
+  <div class="bw-row">
+    <input class="bw-inp" id="bw-input" type="number" step="0.1" placeholder="Peso corporal (kg)"/>
+    <input class="bw-inp" id="cal-input" type="number" placeholder="Calorías" style="max-width:115px"/>
+    <button class="bw-btn" onclick="logMetrics()">✓</button>
+  </div>
+  <div class="log-list" id="log-list"></div>
+  <div id="sessions-container"></div>
+</div>
+
+<!-- HISTORICO PAGE -->
+<div class="page" id="page-hist">
+  <div class="page-header">
+    <div class="page-title">Histórico</div>
+    <div class="page-sub" id="hist-sub">microciclos completados</div>
+  </div>
+  <div class="tt-bar">
+    <button class="tt-btn" id="tt-prev" onclick="ttNav(-1)">‹</button>
+    <div class="tt-label" id="tt-label">M1 ↗ actual</div>
+    <button class="tt-btn" id="tt-next" onclick="ttNav(+1)">›</button>
+  </div>
+  <div class="tt-sub" id="tt-sub"></div>
+  <div class="hist-filters" id="hist-filters"></div>
+  <div id="hist-container"></div>
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div class="page" id="page-dash">
+  <div class="page-header"><div class="page-title">Dashboard</div><div class="page-sub">Visión general del bulk</div></div>
+  <div id="stag-alerts"></div>
+  <div class="dash-sec">
+    <div class="dash-title">Peso corporal</div>
+    <div class="dash-grid">
+      <div class="dcard"><div class="dlabel">Peso actual</div><div class="dvalue ac" id="d-weight">—</div><div class="dsub">Media último micro</div></div>
+      <div class="dcard"><div class="dlabel">Ganancia total</div><div class="dvalue up" id="d-gain">—</div><div class="dsub" id="d-gain-sub">vs inicio</div></div>
+      <div class="dcard wide">
+        <div class="dlabel" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Evolución + proyección lineal</span>
+          <span style="display:flex;gap:10px;font-size:10px;align-items:center">
+            <span><span class="ldot" style="background:var(--accent)"></span>Real</span>
+            <span><span class="ldot" style="background:rgba(200,240,96,.35);outline:1px dashed var(--accent)"></span>Proyección</span>
+          </span>
+        </div>
+        <div class="chart-wrap" style="height:155px"><canvas id="weight-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="dash-sec">
+    <div class="dash-title">Objetivos</div>
+    <div class="dcard wide" style="margin-bottom:10px">
+      <div class="dlabel">Objetivo de peso (kg)</div>
+      <div class="goal-row"><span class="goal-lbl" id="gw-label">Sin definir</span><input class="goal-inp" id="gw-input" type="number" step="0.1" placeholder="p.ej. 80"/><button class="goal-save" onclick="saveGoal('w')">Fijar</button></div>
+      <div class="prog-wrap"><div class="prog-bar" id="gw-bar" style="width:0%"></div></div>
+      <div class="goal-eta" id="gw-eta">Define un objetivo de peso para ver proyección y ETA</div>
+    </div>
+    <div class="dcard wide">
+      <div class="dlabel">Objetivo de calorías diarias (kcal)</div>
+      <div class="goal-row"><span class="goal-lbl" id="gc-label">Sin definir</span><input class="goal-inp" id="gc-input" type="number" placeholder="p.ej. 3200"/><button class="goal-save" onclick="saveGoal('c')">Fijar</button></div>
+      <div class="prog-wrap"><div class="prog-bar" id="gc-bar" style="width:0%"></div></div>
+      <div class="goal-eta" id="gc-eta"></div>
+    </div>
+  </div>
+  <div class="dash-sec">
+    <div class="dash-title">Calorías</div>
+    <div class="dash-grid">
+      <div class="dcard"><div class="dlabel">Media último micro</div><div class="dvalue ac" id="d-cals">—</div><div class="dsub">kcal/día</div></div>
+      <div class="dcard"><div class="dlabel">Objetivo actual</div><div class="dvalue" id="d-calobj">—</div><div class="dsub">kcal/día</div></div>
+      <div class="dcard wide"><div class="dlabel">Calorías por micro</div><div class="chart-wrap"><canvas id="cal-chart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="dash-sec">
+    <div class="dash-title">Progresión neta por sesión</div>
+    <div class="dcard wide" style="margin-bottom:10px">
+      <div class="dlabel">Saldo ↑/↓ ejercicios por microciclo</div>
+      <div class="chart-wrap" style="height:155px;margin-top:8px"><canvas id="sess-chart"></canvas></div>
+    </div>
+    <div id="sess-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+  </div>
+</div>
+
+<!-- EDITOR PAGE -->
+<div class="page" id="page-edit">
+  <div class="page-header"><div class="page-title">Editor</div><div class="page-sub">Cómo editar datos históricos</div></div>
+
+  <div class="editor-panel">
+    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span class="editor-hdr-title">📱 Cómo editar microciclos antiguos</span>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="editor-body">
+      <div class="editor-step"><strong>¿Qué es el localStorage?</strong>Todos los datos de la app se guardan en el navegador en un objeto JSON con clave <code style="color:var(--accent)">b26v2</code>. Para editarlo, usas la consola del navegador — no hace falta instalar nada.</div>
+
+      <div class="editor-step"><strong>Paso 1 — Abrir la consola</strong>
+      · En Chrome/Safari móvil: conecta el móvil al PC, abre <code style="color:var(--accent)">chrome://inspect</code> y selecciona la pestaña.<br>
+      · En PC: pulsa <kbd style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px">F12</kbd> → pestaña "Console".</div>
+
+      <div class="editor-step"><strong>Paso 2 — Ver todos los datos actuales</strong></div>
+      <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
+console.log(JSON.stringify(d, null, 2));</div>
+
+      <div class="editor-step"><strong>Paso 3a — Editar peso medio de un micro completado</strong><br>Por ejemplo, corregir el peso del M2 (índice 1 en wHist):</div>
+      <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
+d.wHist[1] = 74.5;  // cambia el peso del M2
+localStorage.setItem('b26v2', JSON.stringify(d));
+location.reload();</div>
+
+      <div class="editor-step"><strong>Paso 3b — Editar calorías medias de un micro</strong></div>
+      <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
+d.cHist[0] = 3100;  // M1 = índice 0
+localStorage.setItem('b26v2', JSON.stringify(d));
+location.reload();</div>
+
+      <div class="editor-step"><strong>Paso 3c — Editar kilos/reps de un ejercicio en un snapshot</strong><br>Los snapshots guardan las sesiones completas. Por ejemplo, editar el press banca del M1 (snapshot índice 0), primera serie:</div>
+      <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
+// snapshots[0] = M1, sessions[0] = Empuje 1, exercises[0] = Press banca
+d.snapshots[0].sessions[0].exercises[0].sets[0].kg = 87.5;
+d.snapshots[0].sessions[0].exercises[0].sets[0].reps = 6;
+localStorage.setItem('b26v2', JSON.stringify(d));
+location.reload();</div>
+
+      <div class="editor-step"><strong>Paso 3d — Editar el microciclo ACTUAL (en curso)</strong></div>
+      <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
+// sessions[2] = Pierna 1, exercises[1] = Sentadilla
+d.sessions[2].exercises[1].sets[0].kg = 45;
+localStorage.setItem('b26v2', JSON.stringify(d));
+location.reload();</div>
+
+      <div class="editor-step"><strong>Paso 3e — Corregir una entrada del log de peso/calorías</strong></div>
+      <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
+d.log['D3'] = {w: 73.8, c: 3150};  // sobrescribe día 3
+localStorage.setItem('b26v2', JSON.stringify(d));
+location.reload();</div>
+
+      <div class="editor-step"><strong>🔢 Índices de sesiones (sessions[])</strong><br>
+      0 = Empuje 1 · 1 = Tracción 1 · 2 = Pierna 1 · 3 = Empuje 2 · 4 = Tracción 2 · 5 = Pierna 2</div>
+
+      <div class="editor-step"><strong>💡 Tip: ver el índice de un ejercicio</strong></div>
+      <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
+d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
+
+      <div class="editor-step"><strong>🛡 Antes de editar, haz una copia de seguridad</strong></div>
+      <div class="code-block">copy(localStorage.getItem('b26v2'));
+// Pega en un .txt para tener backup</div>
+    </div>
+  </div>
+
+  <!-- Quick editor tool -->
+  <div class="editor-panel">
+    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span class="editor-hdr-title">🛠 Herramienta rápida: editar log de peso/cal</span>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="editor-body">
+      <div class="editor-step">Edita o añade entradas del log del micro actual directamente:</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <input id="eq-day" type="text" placeholder="Día (D1, D2...)" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;flex:1;min-width:100px"/>
+        <input id="eq-w" type="number" step="0.1" placeholder="Peso kg" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;width:100px"/>
+        <input id="eq-c" type="number" placeholder="Calorías" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;width:100px"/>
+        <button onclick="quickEditLog()" style="padding:9px 16px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:13px;border:none;cursor:pointer;">Guardar</button>
+      </div>
+      <div id="eq-status" style="font-size:12px;color:var(--text3);"></div>
+    </div>
+  </div>
+
+  <div class="editor-panel">
+    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span class="editor-hdr-title">📤 Exportar / importar datos</span>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="editor-body">
+      <div class="editor-step">Exporta todos tus datos como texto para guardar una copia o transferirlos a otro dispositivo.</div>
+      <button onclick="exportData()" style="padding:10px 18px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;margin-bottom:10px;width:100%">📋 Copiar datos al portapapeles</button>
+      <div class="editor-step">Para importar en otro dispositivo, pega el JSON exportado aquí:</div>
+      <textarea id="import-area" placeholder='Pega aquí el JSON exportado...' style="width:100%;height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-family:monospace;resize:vertical;outline:none;"></textarea>
+      <button onclick="importData()" style="padding:10px 18px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:13px;border:none;cursor:pointer;margin-top:8px;width:100%">Importar y recargar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-bar">
+  <button class="bbot active" id="btn-micro" onclick="showPage('micro')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><span>Micro</span>
+  </button>
+  <button class="bbot" id="btn-hist" onclick="showPage('hist')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Hist.</span>
+  </button>
+  <button class="bbot" id="btn-dash" onclick="showPage('dash')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Stats</span>
+  </button>
+  <button class="bbot" id="btn-edit" onclick="showPage('edit')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Editor</span>
+  </button>
+</div>
+
+<!-- EDIT EXERCISE MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title" id="m-exname"></div>
+    <div class="modal-sub" id="m-exobs"></div>
+    <div id="m-sets"></div>
+    <div style="margin-top:11px;"><button class="add-set-btn" onclick="addSet()">+ Añadir serie</button></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeOverlay('edit-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveExercise()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOSE MICRO -->
+<div class="full-overlay" id="close-overlay">
+  <div class="fbox">
+    <div class="fbox-title" id="co-title">Cerrar Microciclo 1</div>
+    <div class="fbox-sub">Archiva el micro y prepara el siguiente. Revisa el resumen.</div>
+    <div class="summary" id="co-summary"></div>
+    <div class="sfield"><label>Objetivo calorías siguiente micro (kcal/día)</label><input id="co-cal" type="number" placeholder="3200"/></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeOverlay('close-overlay')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmClose()">Confirmar y cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- START NEW MICRO -->
+<div class="full-overlay" id="start-overlay">
+  <div class="fbox">
+    <div class="fbox-title" id="so-title" style="color:var(--accent)">Microciclo 2</div>
+    <div class="fbox-sub" id="so-sub">Micro anterior archivado ✓</div>
+    <div class="sfield"><label>Objetivo calorías diarias (kcal/día)</label><input id="so-cal" type="number" placeholder="3200"/></div>
+    <button class="btn btn-primary" style="width:100%" onclick="startMicro()">Empezar microciclo</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ── SEED DATA ──────────────────────────────────────────────────
+const SEED_SESSIONS = [
+  {id:'empuje1',name:'Empuje 1',tag:'Pecho · Hombro · Tríceps',exercises:[
+    {id:'press_banca',name:'Press banca',obs:'Calentamiento y aproximación',rir:1,sets:[{kg:85,reps:6,type:'topset'},{kg:70,reps:8,type:'backoff'}]},
+    {id:'triceps_katana',name:'Tríceps katana',obs:'Altura 13, intentar apoyar codo',rir:1,sets:[{kg:7.5,reps:10,type:''},{kg:5,reps:'Fallo',type:'dropset'}]},
+    {id:'press_incl_maq',name:'Press inclinado máquina',obs:'Altura 4',rir:0,sets:[{kg:30,reps:8,type:''}]},
+    {id:'pajaros_polea',name:'Pájaros polea cruzada',obs:'Bilateral, altura 22',rir:0,sets:[{kg:5,reps:10,type:''}]},
+    {id:'ext_triceps',name:'Extensión tríceps polea',obs:'Codos juntos hasta el final',rir:0,sets:[{kg:17.5,reps:8,type:''}]},
+    {id:'lat_polea',name:'Elevaciones laterales polea',obs:'Muñequera bajo codo, altura 12',rir:0,sets:[{kg:13.75,reps:8,type:''},{kg:7.5,reps:'Fallo',type:'dropset'}]},
+    {id:'crunch_polea_e1',name:'Crunch abdominal polea',obs:'Cadera fija',rir:1,sets:[{kg:35,reps:10,type:''}]},
+    {id:'flex_ante_e1',name:'Flexores antebrazo polea',obs:'Altura mínima',rir:1,sets:[{kg:35,reps:10,type:''}]},
+    {id:'ext_ante_e1',name:'Extensores antebrazo polea',obs:'Altura 21',rir:1,sets:[{kg:35,reps:8,type:''}]},
+    {id:'dragon_flag_e1',name:'Dragon flag',obs:'Tuck avanzado',rir:1,sets:[{kg:null,reps:6,type:''}]},
+  ]},
+  {id:'traccion1',name:'Tracción 1',tag:'Espalda · Bíceps',exercises:[
+    {id:'remo_libre',name:'Remo libre',obs:'Muy técnico y aproximando',rir:1,sets:[{kg:70,reps:10,type:''}]},
+    {id:'traccion_unilat',name:'Tracción polea alta unilateral',obs:'Banco pie y medio, altura máxima',rir:0,sets:[{kg:25,reps:8,type:''}]},
+    {id:'curl_bayesian',name:'Curl bayesian unilateral',obs:'Tensionado, un paso adelante',rir:0,sets:[{kg:13.75,reps:9,type:''}]},
+    {id:'remo_alto_maq',name:'Remo alto máquina bilateral',obs:'Pecho bien apoyado',rir:0,sets:[{kg:55,reps:7,type:''},{kg:40,reps:'Fallo',type:'dropset'}]},
+    {id:'predicador_manc',name:'Predicador unilateral mancuerna',obs:'Banco scot perpendicular',rir:0,sets:[{kg:12,reps:8,type:''}]},
+    {id:'retracciones',name:'Retracciones escapulares banco',obs:'Muy controlado',rir:1,sets:[{kg:22,reps:11,type:''}]},
+  ]},
+  {id:'pierna1',name:'Pierna 1',tag:'Cuádriceps · Femoral · Gemelos',exercises:[
+    {id:'aduccion_maq_p1',name:'Aducción en máquina',obs:'Límite al 3, pies sin apoyar',rir:0,sets:[{kg:70,reps:11,type:''},{kg:40,reps:'Fallo',type:'dropset'}]},
+    {id:'sentadilla_multi',name:'Sentadilla en multipower',obs:'Usar tacos full cuádriceps',rir:1,sets:[{kg:40,reps:10,type:''}]},
+    {id:'gemelos_pie',name:'Gemelos de pie máquina',obs:'Última serie parciales al fallo',rir:0,sets:[{kg:120,reps:12,type:''}]},
+    {id:'ext_rodilla_unilat',name:'Extensión rodilla máquina',obs:'Unilateral, distancia 7',rir:0,sets:[{kg:27.5,reps:10,type:''},{kg:15,reps:'Fallo',type:'dropset'}]},
+    {id:'curl_fem_sentado',name:'Curl femoral sentado',obs:'Distancia asiento al 3',rir:0,sets:[{kg:40,reps:10,type:''},{kg:25,reps:'Fallo',type:'dropset'}]},
+    {id:'ext_lumbares',name:'Extensiones lumbares',obs:'Apoyo en cadera full lumbar',rir:1,sets:[{kg:10,reps:9,type:''}]},
+    {id:'crunch_polea_p1',name:'Crunch abdominal polea',obs:'Cadera fija',rir:1,sets:[{kg:35,reps:10,type:''}]},
+    {id:'dragon_flag_p1',name:'Dragon flag',obs:'Tuck avanzado',rir:1,sets:[{kg:null,reps:6,type:''}]},
+  ]},
+  {id:'empuje2',name:'Empuje 2',tag:'Pecho · Hombro · Tríceps',exercises:[
+    {id:'press_incl_manc',name:'Press inclinado mancuernas',obs:'Calentando y aproximando',rir:1,sets:[{kg:28,reps:8,type:''}]},
+    {id:'kaz_press',name:'Kaz press',obs:'Topes al 4',rir:1,sets:[{kg:40,reps:10,type:''}]},
+    {id:'aperturas_polea',name:'Aperturas polea sentado',obs:'Altura 15, distancia pie y medio',rir:0,sets:[{kg:17.5,reps:10,type:''}]},
+    {id:'press_militar',name:'Press militar máquina',obs:'Altura 7',rir:0,sets:[{kg:25,reps:10,type:''}]},
+    {id:'patada_unilat',name:'Patada unilateral polea',obs:'Altura 13',rir:0,sets:[{kg:10,reps:9,type:''},{kg:5,reps:'Fallo',type:'dropset'}]},
+    {id:'laterales_banco',name:'Laterales mancuernas banco',obs:'',rir:0,sets:[{kg:9,reps:8,type:''},{kg:6,reps:'Fallo',type:'dropset'}]},
+  ]},
+  {id:'traccion2',name:'Tracción 2',tag:'Espalda · Bíceps · Core',exercises:[
+    {id:'remo_prono',name:'Remo polea prono',obs:'Agarre abierto, espalda anclada',rir:1,sets:[{kg:65,reps:10,type:''}]},
+    {id:'jalon_neutro',name:'Jalón al pecho neutro',obs:'Codos bajan perpendicular al suelo',rir:1,sets:[{kg:65,reps:9,type:''}]},
+    {id:'dead_curl',name:'Dead curl banco scot',obs:'Apoyando codos, altura 6',rir:0,sets:[{kg:12,reps:10,type:''}]},
+    {id:'remo_dorian',name:'Remo dorian máquina unilateral',obs:'Altura 3, anclando otro brazo',rir:0,sets:[{kg:55,reps:9,type:''},{kg:40,reps:'Fallo',type:'dropset'}]},
+    {id:'curl_martillo',name:'Curl martillo unilateral',obs:'',rir:0,sets:[{kg:14,reps:7,type:''},{kg:9,reps:'Fallo',type:'dropset'}]},
+    {id:'crunch_polea_t2',name:'Crunch abdominal polea',obs:'Cadera fija',rir:1,sets:[{kg:35,reps:10,type:''}]},
+    {id:'dragon_flag_t2',name:'Dragon flag',obs:'Tuck avanzado',rir:1,sets:[{kg:null,reps:6,type:''}]},
+  ]},
+  {id:'pierna2',name:'Pierna 2',tag:'Femoral · Cuádriceps · Gemelos',exercises:[
+    {id:'peso_muerto_rum',name:'Peso muerto rumano prono',obs:'Calentando y aproximando',rir:1,sets:[{kg:125,reps:6,type:''}]},
+    {id:'ext_rodilla_bilat',name:'Extensión rodilla bilateral',obs:'Distancia 7',rir:0,sets:[{kg:50,reps:10,type:''}]},
+    {id:'aduccion_maq_p2',name:'Aducción en máquina',obs:'Límite al 3',rir:0,sets:[{kg:70,reps:10,type:''},{kg:45,reps:'Fallo',type:'dropset'}]},
+    {id:'gemelos_prensa',name:'Gemelos en prensa negra',obs:'Parciales al fallo última serie',rir:0,sets:[{kg:130,reps:10,type:''}]},
+    {id:'curl_fem_tumbado',name:'Curl femoral tumbado',obs:'',rir:0,sets:[{kg:25,reps:10,type:''}]},
+    {id:'prensa_cuad',name:'Prensa amarilla cuádriceps',obs:'Aproximando',rir:1,sets:[{kg:120,reps:9,type:''}]},
+  ]},
+];
+
+// M8 data from Excel (the completed micro that serves as M0 baseline)
+const M0_PREV = {
+  press_banca:[{kg:85,reps:6,type:'topset'},{kg:70,reps:8,type:'backoff'}],
+  triceps_katana:[{kg:7.5,reps:9,type:''},{kg:5,reps:'Fallo',type:'dropset'}],
+  press_incl_maq:[{kg:30,reps:8,type:''}],
+  pajaros_polea:[{kg:5,reps:10,type:''}],
+  ext_triceps:[{kg:17.5,reps:8,type:''}],
+  lat_polea:[{kg:13.75,reps:8,type:''},{kg:7.5,reps:'Fallo',type:'dropset'}],
+  crunch_polea_e1:[{kg:35,reps:10,type:''}],
+  flex_ante_e1:[{kg:35,reps:10,type:''}],
+  ext_ante_e1:[{kg:35,reps:8,type:''}],
+  dragon_flag_e1:[{kg:null,reps:6,type:''}],
+  remo_libre:[{kg:70,reps:9,type:''}],
+  traccion_unilat:[{kg:25,reps:8,type:''}],
+  curl_bayesian:[{kg:13.75,reps:9,type:''}],
+  remo_alto_maq:[{kg:55,reps:7,type:''},{kg:40,reps:'Fallo',type:'dropset'}],
+  predicador_manc:[{kg:12,reps:8,type:''}],
+  retracciones:[{kg:22,reps:11,type:''}],
+  aduccion_maq_p1:[{kg:70,reps:11,type:''},{kg:40,reps:'Fallo',type:'dropset'}],
+  sentadilla_multi:[{kg:40,reps:10,type:''}],
+  gemelos_pie:[{kg:120,reps:12,type:''}],
+  ext_rodilla_unilat:[{kg:27.5,reps:10,type:''},{kg:15,reps:'Fallo',type:'dropset'}],
+  curl_fem_sentado:[{kg:40,reps:10,type:''},{kg:25,reps:'Fallo',type:'dropset'}],
+  ext_lumbares:[{kg:10,reps:9,type:''}],
+  crunch_polea_p1:[{kg:35,reps:10,type:''}],
+  dragon_flag_p1:[{kg:null,reps:6,type:''}],
+  press_incl_manc:[{kg:28,reps:8,type:''}],
+  kaz_press:[{kg:40,reps:10,type:''}],
+  aperturas_polea:[{kg:17.5,reps:10,type:''}],
+  press_militar:[{kg:25,reps:10,type:''}],
+  patada_unilat:[{kg:10,reps:9,type:''},{kg:5,reps:'Fallo',type:'dropset'}],
+  laterales_banco:[{kg:9,reps:8,type:''},{kg:6,reps:'Fallo',type:'dropset'}],
+  remo_prono:[{kg:65,reps:10,type:''}],
+  jalon_neutro:[{kg:65,reps:9,type:''}],
+  dead_curl:[{kg:12,reps:10,type:''}],
+  remo_dorian:[{kg:55,reps:9,type:''},{kg:40,reps:'Fallo',type:'dropset'}],
+  curl_martillo:[{kg:14,reps:7,type:''},{kg:9,reps:'Fallo',type:'dropset'}],
+  crunch_polea_t2:[{kg:35,reps:10,type:''}],
+  dragon_flag_t2:[{kg:null,reps:6,type:''}],
+  peso_muerto_rum:[{kg:125,reps:6,type:''}],
+  ext_rodilla_bilat:[{kg:50,reps:10,type:''}],
+  aduccion_maq_p2:[{kg:70,reps:10,type:''},{kg:45,reps:'Fallo',type:'dropset'}],
+  gemelos_prensa:[{kg:130,reps:10,type:''}],
+  curl_fem_tumbado:[{kg:25,reps:10,type:''}],
+  prensa_cuad:[{kg:120,reps:9,type:''}],
+};
+
+// Historical snapshots M1-M8 built from Excel histórico sheet
+// Each snapshot has the sessions with that micro's data
+function buildSnapshot(microIdx) {
+  // microIdx 0=M1 ... 7=M8
+  const h = HIST_DATA;
+  const get = (key, mi) => h[key] ? h[key][mi] : null;
+  const s = JSON.parse(JSON.stringify(SEED_SESSIONS));
+  // Map exercise IDs to hist keys
+  const MAP = {
+    press_banca: ['press_banca_top','press_banca_back'],
+    triceps_katana: ['triceps_katana','triceps_katana_drop'],
+    press_incl_maq: ['press_incl_maq'],
+    pajaros_polea: ['pajaros_polea'],
+    ext_triceps: ['ext_triceps'],
+    lat_polea: ['lat_polea_top','lat_polea_drop'],
+    crunch_polea_e1: ['crunch_polea_e1'],
+    flex_ante_e1: ['flex_ante_e1'],
+    ext_ante_e1: ['ext_ante_e1'],
+    dragon_flag_e1: ['dragon_flag_e1'],
+    remo_libre: ['remo_libre'],
+    traccion_unilat: ['traccion_unilat'],
+    curl_bayesian: ['curl_bayesian'],
+    remo_alto_maq: ['remo_alto_top','remo_alto_drop'],
+    predicador_manc: ['predicador_manc'],
+    retracciones: ['retracciones'],
+    aduccion_maq_p1: ['aduccion_p1_top','aduccion_p1_drop'],
+    sentadilla_multi: ['sentadilla_multi'],
+    gemelos_pie: ['gemelos_pie'],
+    ext_rodilla_unilat: ['ext_rodilla_unilat_top','ext_rodilla_unilat_drop'],
+    curl_fem_sentado: ['curl_fem_sent_top','curl_fem_sent_drop'],
+    ext_lumbares: ['ext_lumbares'],
+    crunch_polea_p1: ['crunch_polea_p1'],
+    dragon_flag_p1: ['dragon_flag_p1'],
+    press_incl_manc: ['press_incl_manc'],
+    kaz_press: ['kaz_press'],
+    aperturas_polea: ['aperturas_polea'],
+    press_militar: ['press_militar'],
+    patada_unilat: ['patada_top','patada_drop'],
+    laterales_banco: ['laterales_top','laterales_drop'],
+    remo_prono: ['remo_prono'],
+    jalon_neutro: ['jalon_neutro'],
+    dead_curl: ['dead_curl'],
+    remo_dorian: ['remo_dorian_top','remo_dorian_drop'],
+    curl_martillo: ['curl_martillo_top','curl_martillo_drop'],
+    crunch_polea_t2: ['crunch_polea_t2'],
+    dragon_flag_t2: ['dragon_flag_t2'],
+    peso_muerto_rum: ['peso_muerto_rum'],
+    ext_rodilla_bilat: ['ext_rodilla_bilat'],
+    aduccion_maq_p2: ['aduccion_p2_top','aduccion_p2_drop'],
+    gemelos_prensa: ['gemelos_prensa'],
+    curl_fem_tumbado: ['curl_fem_tumbado'],
+    prensa_cuad: ['prensa_cuad'],
+  };
+  s.forEach(sess => {
+    sess.exercises.forEach(ex => {
+      const keys = MAP[ex.id];
+      if (!keys) return;
+      ex.sets = keys.map((k, si) => {
+        const d = get(k, microIdx);
+        if (!d) return ex.sets[si] || {kg:null,reps:0,type:''};
+        const type = si===0&&keys.length>1&&k.includes('top')?'topset': si===0&&k.includes('back')?'backoff': k.includes('drop')?'dropset':'';
+        return {kg: d[0], reps: d[1], type};
+      }).filter(Boolean);
+    });
+  });
+  return {microNum: microIdx+1, sessions: s};
+}
+
+const HIST_DATA = {
+  press_banca_top:    [[80,7],[85,6],[85,7],[85,5],[85,6],[85,6],[85,7],[85,6]],
+  press_banca_back:   [[70,7],[70,8],[70,8],[70,8],[70,8],[70,9],[70,9],[70,8]],
+  triceps_katana:     [[15,8],[15,8],[15,9],[15,9],[15,9],[15,10],[17.5,5],[7.5,9]],
+  triceps_katana_drop:[[10,5],[10,'Fallo'],[10,'Fallo'],[10,'Fallo'],[10,'Fallo'],[10,'Fallo'],[10,'Fallo'],[5,'Fallo']],
+  press_incl_maq:     [[25,9],[25,9],[25,11],[30,7],[30,7],[30,8],[30,8],[30,8]],
+  pajaros_polea:      [[3.75,10],[3.75,11],[5,8],[5,9],[5,9],[5,9],[5,10],[5,10]],
+  ext_triceps:        [[5,10],[15,8],[15,10],[15,10],[17.5,8],[17.5,8],[17.5,8],[17.5,8]],
+  lat_polea_top:      [[10,10],[11.5,10],[11.5,10],[12.5,9],[12.5,9],[12.5,10],[13.75,6],[13.75,8]],
+  lat_polea_drop:     [[5,4],[7.5,'Fallo'],[7.5,'Fallo'],[7.5,'Fallo'],[7.5,'Fallo'],[7.5,'Fallo'],[7.5,'Fallo'],[7.5,'Fallo']],
+  crunch_polea_e1:    [[35,8],[35,10],[37.5,9],[37.5,9],[37.5,10],[40,6],[40,7],[35,10]],
+  flex_ante_e1:       [[30,10],[30,12],[35,8],[35,8],[35,8],[35,9],[37.5,8],[35,10]],
+  ext_ante_e1:        [[25,10],[25,10],[27.5,10],[27.5,10],[27.5,10],[32.5,8],[35,8],[35,8]],
+  dragon_flag_e1:     [[null,6],[null,6],[null,6],[null,6],[null,6],[null,6],[null,6],[null,6]],
+  remo_libre:         [[70,8],[70,10],[75,8],[80,7],[80,8],[85,6],[85,6],[70,9]],
+  traccion_unilat:    [[22.5,11],[26.5,9],[26.5,10],[26.5,10],[26.5,10],[27.5,8],[27.5,8],[25,8]],
+  curl_bayesian:      [[8.75,10],[10,10],[12.5,9],[12.5,10],[12.5,11],[13.75,8],[13.75,8],[13.75,9]],
+  remo_alto_top:      [[40,10],[50,8],[50,9],[50,10],[50,11],[55,8],[55,8],[55,7]],
+  remo_alto_drop:     [[30,4],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo']],
+  predicador_manc:    [[10,8],[10,9],[10,9],[10,9],[10,10],[10,11],[12,8],[12,8]],
+  retracciones:       [[18,8],[18,8],[18,10],[20,10],[20,10],[22,10],[22,11],[22,11]],
+  aduccion_p1_top:    [[60,10],[60,11],[60,8],[65,10],[65,11],[65,12],[70,8],[70,11]],
+  aduccion_p1_drop:   [[30,'Fallo'],[30,'Fallo'],[30,'Fallo'],[35,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo']],
+  sentadilla_multi:   [[60,8],[60,9],[60,8],[60,10],[70,8],[70,8],[70,8],[40,10]],
+  gemelos_pie:        [[80,10],[80,12],[80,15],[120,8],[120,10],[120,10],[120,11],[120,12]],
+  ext_rodilla_unilat_top:[[20,10],[20,10],[20,10],[27.5,8],[27.5,8],[27.5,9],[27.5,10],[27.5,10]],
+  ext_rodilla_unilat_drop:[[10,'Fallo'],[10,'Fallo'],[10,'Fallo'],[15,'Fallo'],[15,'Fallo'],[15,'Fallo'],[15,'Fallo'],[15,'Fallo']],
+  curl_fem_sent_top:  [[20,10],[37.5,8],[37.5,10],[37.5,10],[40,10],[40,10],[40,10],[40,10]],
+  curl_fem_sent_drop: [[10,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo']],
+  ext_lumbares:       [[10,8],[10,9],[10,9],[10,9],[10,9],[10,9],[10,9],[10,9]],
+  crunch_polea_p1:    [[35,9],[35,10],[37.5,8],[37.5,8],[37.5,9],[37.5,9],[37.5,9],[35,10]],
+  flex_ante_p1:       [[30,12],[32.5,10],[35,10],[35,11],[35,11],[35,11],[37.5,8],[35,10]],
+  ext_ante_p1:        [[25,10],[25,10],[30,10],[30,10],[32.5,8],[32.5,8],[32.5,8],[35,8]],
+  dragon_flag_p1:     [[null,6],[null,6],[null,6],[null,6],[null,6],[null,6],[null,6],[null,6]],
+  press_incl_manc:    [[26,8],[26,9],[26,10],[28,9],[28,9],[28,9],[28,9],[28,8]],
+  kaz_press:          [[30,10],[30,10],[30,10],[30,10],[50,10],[50,10],[50,11],[40,10]],
+  aperturas_polea:    [[12.5,10],[12.5,11],[15,10],[15,11],[16.25,10],[17.5,8],[17.5,9],[17.5,10]],
+  press_militar:      [[20,10],[20,11],[25,10],[25,10],[25,10],[25,10],[25,10],[25,10]],
+  patada_top:         [[6.25,10],[7.5,9],[7.5,12],[8.5,10],[8.5,12],[10,8],[10,9],[10,9]],
+  patada_drop:        [[5,'Fallo'],[5,'Fallo'],[5,'Fallo'],[5,'Fallo'],[5,'Fallo'],[5,'Fallo'],[5,'Fallo'],[5,'Fallo']],
+  laterales_top:      [[7,10],[7,10],[8,8],[8,8],[8,8],[9,8],[9,8],[9,8]],
+  laterales_drop:     [[5,'Fallo'],[5,'Fallo'],[5,'Fallo'],[5,'Fallo'],[5,'Fallo'],[6,'Fallo'],[6,'Fallo'],[6,'Fallo']],
+  remo_prono:         [[50,10],[55,9],[55,11],[60,10],[60,11],[65,8],[65,9],[65,10]],
+  jalon_neutro:       [[60,10],[65,8],[65,9],[65,9],[65,9],[65,9],[65,9],[65,9]],
+  dead_curl:          [[10,10],[10,10],[12,8],[12,9],[12,9],[12,10],[12,10],[12,10]],
+  remo_dorian_top:    [[50,8],[50,9],[50,10],[50,11],[55,8],[55,8],[55,9],[55,9]],
+  remo_dorian_drop:   [[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo']],
+  curl_martillo_top:  [[10,10],[10,10],[12,8],[12,8],[12,9],[12,10],[12,11],[14,7]],
+  curl_martillo_drop: [[7,'Fallo'],[7,'Fallo'],[9,'Fallo'],[9,'Fallo'],[9,'Fallo'],[9,'Fallo'],[9,'Fallo'],[9,'Fallo']],
+  crunch_polea_t2:    [[35,8],[35,11],[37.5,9],[37.5,9],[37.5,9],[37.5,9],[37.5,10],[35,10]],
+  flex_ante_t2:       [[30,10],[32.5,9],[35,10],[35,10],[35,10],[35,10],[35,12],[35,10]],
+  ext_ante_t2:        [[25,10],[25,10],[32.5,8],[32.5,8],[32.5,8],[32.5,8],[32.5,8],[35,8]],
+  dragon_flag_t2:     [[null,6],[null,6],[null,6],[null,6],[null,6],[null,6],[null,6],[null,6]],
+  peso_muerto_rum:    [[120,6],[120,7],[120,7],[120,8],[125,6],[125,7],[125,8],[125,6]],
+  ext_rodilla_bilat:  [[40,12],[45,9],[45,10],[45,10],[45,12],[50,9],[50,10],[50,10]],
+  aduccion_p2_top:    [[60,10],[60,8],[60,9],[60,10],[60,10],[60,10],[60,11],[70,10]],
+  aduccion_p2_drop:   [[30,'Fallo'],[30,'Fallo'],[35,'Fallo'],[35,'Fallo'],[35,'Fallo'],[35,'Fallo'],[35,'Fallo'],[45,'Fallo']],
+  gemelos_prensa:     [[100,12],[110,10],[110,10],[110,10],[110,10],[130,8],[130,10],[130,10]],
+  curl_fem_tumbado:   [[null,null],[25,10],[25,10],[25,10],[25,10],[25,8],[25,10],[25,10]],
+  prensa_cuad:        [[null,null],[null,null],[null,null],[null,null],[120,8],[120,9],[120,9],[120,9]],
+};
+
+// Historical weight/cal per micro M1-M8
+const HIST_WEIGHT = [73.98, 75.2, 73.4, 73.8, 74.23, 75.05, 73.56, null];
+const HIST_CAL    = [2978,  null, 2810, 2950, 3062,   3048,  2891,  3080];
+
+// Session net progress M1→M2 ... M7→M8 (7 deltas) computed from historical changes
+const HIST_SESS_PROG = {
+  empuje1:[2,3,1,2,1,3,-1], traccion1:[3,2,2,1,2,1,0],
+  pierna1:[1,2,3,2,0,2,1],  empuje2:[2,1,2,1,2,1,-1],
+  traccion2:[2,3,1,2,1,0,2],pierna2:[0,1,2,3,2,1,0],
+};
+
+const SESS_META = {
+  empuje1:{name:'Empuje 1',color:'#c8f060'}, traccion1:{name:'Tracción 1',color:'#60d0f0'},
+  pierna1:{name:'Pierna 1',color:'#f0b040'},  empuje2:{name:'Empuje 2',color:'#b8e050'},
+  traccion2:{name:'Tracción 2',color:'#50c0e0'},pierna2:{name:'Pierna 2',color:'#e0a030'},
+};
+const SCHEDULE = ['empuje1','traccion1','rest','pierna1','empuje2','rest','traccion2','pierna2','rest'];
+const SSHORT   = ['E1','T1','—','P1','E2','—','T2','P2','—'];
+const SCOLORS  = ['push','pull','rd','legs','push','rd','pull','legs','rd'];
+
+// ── PERSISTENCE ────────────────────────────────────────────────
+function ls(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch{return d;}}
+function lsw(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+
+// Build pre-loaded snapshots from historical data (M1-M8)
+function buildInitialSnapshots(){
+  const snaps=[];
+  for(let i=0;i<8;i++) snaps.push(buildSnapshot(i));
+  return snaps;
+}
+
+let APP = ls('b26v2', {
+  microNum: 1,
+  calObj: 3200,
+  wHist: [],         // completed micro weight averages — starts empty
+  cHist: [],         // completed micro cal averages — starts empty
+  sessProg: {empuje1:[],traccion1:[],pierna1:[],empuje2:[],traccion2:[],pierna2:[]},
+  goals: {w:null,c:null},
+  sessions: null,
+  prevMicro: M0_PREV,  // M8 real data as comparison baseline for M1
+  log: {},
+  dayCount: 0,
+  snapshots: buildInitialSnapshots(), // M1-M8 pre-loaded from Excel
+});
+
+let sessions = APP.sessions ? JSON.parse(JSON.stringify(APP.sessions)) : JSON.parse(JSON.stringify(SEED_SESSIONS));
+function save(){APP.sessions=sessions;lsw('b26v2',APP);}
+
+// ── UTILS ──────────────────────────────────────────────────────
+const toN=v=>parseFloat(v)||0;
+function cmpSet(a,b){
+  if(!a||!b) return 'same';
+  const ar=a.reps==='Fallo'?9999:toN(a.reps),br=b.reps==='Fallo'?9999:toN(b.reps);
+  const ak=toN(a.kg),bk=toN(b.kg);
+  if(ak>bk) return 'up'; if(ak<bk) return 'down';
+  if(ar>br) return 'up'; if(ar<br) return 'down';
+  return 'same';
+}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function closeOverlay(id){document.getElementById(id).classList.remove('open');}
+
+// ── NAV ────────────────────────────────────────────────────────
+function showPage(p){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.bbot').forEach(e=>e.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  const idx=['micro','hist','dash','edit'].indexOf(p);
+  document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  document.getElementById('btn-'+p).classList.add('active');
+  if(p==='hist') renderHist();
+  if(p==='dash') renderDash();
+}
+
+// ── CALENDAR ───────────────────────────────────────────────────
+function renderCal(){
+  const el=document.getElementById('cal-week');el.innerHTML='';
+  let sessionCounter=0;
+  const sessionsDone=Object.keys(APP.log).length;
+  SCHEDULE.forEach((sid,i)=>{
+    const isRest=sid==='rest';
+    if(!isRest) sessionCounter++;
+    const isDone=!isRest&&sessionCounter<=sessionsDone;
+    const isCurrent=!isRest&&sessionCounter===sessionsDone+1;
+    const d=document.createElement('div');
+    d.className='cal-day'+(isCurrent?' current':'')+(isDone?' done':'')
+      +(!isRest&&!isCurrent?' training':'')+(isRest&&!isCurrent?' rest-day':'');
+    d.innerHTML=`<span class="dlabel">${SSHORT[i]}</span>${!isCurrent?`<div class="cdot ${SCOLORS[i]}"></div>`:''}`;
+    if(!isRest) d.onclick=()=>{const el2=document.getElementById('sess-'+sid);if(el2){el2.scrollIntoView({behavior:'smooth'});el2.classList.add('open');}};
+    el.appendChild(d);
+  });
+}
+
+// ── STATS BAR ──────────────────────────────────────────────────
+function renderStats(){
+  const bar=document.getElementById('stats-bar');
+  let ups=0,downs=0;
+  sessions.forEach(s=>s.exercises.forEach(ex=>{
+    const prev=APP.prevMicro?APP.prevMicro[ex.id]||[]:[];
+    ex.sets.forEach((set,i)=>{const r=cmpSet(set,prev[i]);if(r==='up')ups++;if(r==='down')downs++;});
+  }));
+  const logArr=Object.values(APP.log);
+  const ws=logArr.map(l=>l.w).filter(Boolean);
+  const cs=logArr.map(l=>l.c).filter(Boolean);
+  const avgW=ws.length?(ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(1):'—';
+  const avgC=cs.length?Math.round(cs.reduce((a,b)=>a+b,0)/cs.length):'—';
+  bar.innerHTML=`
+    <div class="stat-card"><div class="slabel">Micro</div><div class="svalue">#${APP.microNum}</div><div class="ssub">en curso</div></div>
+    <div class="stat-card"><div class="slabel">↑ Mejoras</div><div class="svalue" style="color:var(--up)">${ups}</div><div class="ssub">vs M0</div></div>
+    <div class="stat-card"><div class="slabel">↓ Bajas</div><div class="svalue" style="color:var(--down)">${downs}</div><div class="ssub">vs M0</div></div>
+    <div class="stat-card"><div class="slabel">Peso med.</div><div class="svalue">${avgW}</div><div class="ssub">kg · ${ws.length} días</div></div>
+    <div class="stat-card"><div class="slabel">Cal med.</div><div class="svalue" style="font-size:18px">${avgC}</div><div class="ssub">kcal · ${cs.length} días</div></div>`;
+}
+
+// ── SESSIONS ───────────────────────────────────────────────────
+function renderSessions(){
+  const cont=document.getElementById('sessions-container');cont.innerHTML='';
+  ['empuje1','traccion1','rest1','pierna1','empuje2','rest2','traccion2','pierna2'].forEach(sid=>{
+    if(sid==='rest1'||sid==='rest2'){
+      const r=document.createElement('div');r.className='rest-block';
+      r.innerHTML='<div class="rest-ico">💤</div><div class="rest-lbl">Día de descanso</div>';
+      cont.appendChild(r);return;
+    }
+    const sess=sessions.find(s=>s.id===sid);if(!sess)return;
+    const exRows=sess.exercises.map((ex,ei)=>{
+      const prev=APP.prevMicro?APP.prevMicro[ex.id]||[]:[];
+      const pills=ex.sets.map((set,si)=>{
+        const c=cmpSet(set,prev[si]);
+        const kstr=set.kg!=null?set.kg+' kg':'BW';
+        const tstr=set.type?`<span class="tp">${set.type}</span>`:'';
+        return `<div class="set-pill ${c}" onclick="openEdit('${sid}',${ei})"><span class="kg">${kstr}</span><span class="rp">× ${set.reps}</span>${tstr}</div>`;
+      }).join('');
+      return `<div class="exercise"><div class="ex-name">${ex.name}</div>${ex.obs?`<div class="ex-obs">${ex.obs}</div>`:''}
+        <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})">✏️</button></div>
+        <div class="ex-rir">RIR ${ex.rir} · ${ex.sets.length} series</div></div>`;
+    }).join('');
+    const d=document.createElement('div');d.className='session';d.id='sess-'+sid;
+    d.innerHTML=`<div class="session-hdr" onclick="this.parentElement.classList.toggle('open')">
+      <div><div class="sname">${sess.name}</div><div class="stag">${sess.tag}</div></div>
+      <div class="schev">▾</div></div><div class="session-body">${exRows}</div>`;
+    cont.appendChild(d);
+  });
+  const r=document.createElement('div');r.className='rest-block';
+  r.innerHTML='<div class="rest-ico">💤</div><div class="rest-lbl">Descanso · fin de microciclo</div>';
+  cont.appendChild(r);
+}
+
+// ── EDIT EXERCISE ───────────────────────────────────────────────
+let EC=null;
+function openEdit(sid,ei){
+  const sess=sessions.find(s=>s.id===sid);const ex=sess.exercises[ei];
+  EC={sid,ei,sets:ex.sets.map(s=>({...s}))};
+  document.getElementById('m-exname').textContent=ex.name;
+  document.getElementById('m-exobs').textContent=ex.obs||'';
+  renderMSets();
+  document.getElementById('edit-modal').classList.add('open');
+}
+function renderMSets(){
+  document.getElementById('m-sets').innerHTML=EC.sets.map((s,i)=>`
+    <div class="mrow" style="align-items:flex-end">
+      <div class="mfield"><label>Kg</label><input type="number" step="0.25" value="${s.kg!=null?s.kg:''}" oninput="EC.sets[${i}].kg=parseFloat(this.value)||null" placeholder="—"/></div>
+      <div class="mfield"><label>Reps</label><input type="text" value="${s.reps}" oninput="EC.sets[${i}].reps=isNaN(parseInt(this.value))?this.value:parseInt(this.value)" placeholder="10 / Fallo"/></div>
+      <div class="mfield" style="max-width:88px"><label>Tipo</label>
+        <select onchange="EC.sets[${i}].type=this.value">
+          <option value="" ${!s.type?'selected':''}>Normal</option>
+          <option value="topset" ${s.type==='topset'?'selected':''}>Topset</option>
+          <option value="backoff" ${s.type==='backoff'?'selected':''}>Backoff</option>
+          <option value="dropset" ${s.type==='dropset'?'selected':''}>Dropset</option>
+        </select></div>
+      <button class="btn btn-danger" style="max-width:42px;padding:10px 8px;flex:none" onclick="rmSet(${i})">✕</button>
+    </div>`).join('');
+}
+function addSet(){EC.sets.push({kg:null,reps:10,type:''});renderMSets();}
+function rmSet(i){EC.sets.splice(i,1);renderMSets();}
+function saveExercise(){
+  const sess=sessions.find(s=>s.id===EC.sid);
+  sess.exercises[EC.ei].sets=EC.sets.map(s=>({...s}));
+  save();closeOverlay('edit-modal');renderSessions();renderStats();showToast('✓ Guardado');
+}
+
+// ── DAILY LOG ──────────────────────────────────────────────────
+function logMetrics(){
+  const w=parseFloat(document.getElementById('bw-input').value);
+  const c=parseInt(document.getElementById('cal-input').value);
+  if(!w&&!c){showToast('Introduce peso o calorías');return;}
+  APP.dayCount++;APP.log['D'+APP.dayCount]={w:w||null,c:c||null};
+  save();document.getElementById('bw-input').value='';document.getElementById('cal-input').value='';
+  renderLogList();renderStats();renderCal();showToast('Día '+APP.dayCount+' registrado ✓');
+}
+function renderLogList(){
+  const el=document.getElementById('log-list');
+  const entries=Object.entries(APP.log).sort(([a],[b])=>parseInt(a.slice(1))-parseInt(b.slice(1)));
+  if(!entries.length){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML=`<div style="padding:9px 16px 5px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600">Entradas este micro</div>`
+    +entries.map(([k,v])=>`<div class="log-entry"><span class="log-day">${k}</span>
+      <span class="log-vals">${v.w?`<span class="log-w">⚖ ${v.w} kg</span>`:''} ${v.c?`<span class="log-c">🔥 ${v.c} kcal</span>`:''}</span>
+      <button class="log-del" onclick="delLog('${k}')">✕</button></div>`).join('');
+}
+function delLog(k){
+  delete APP.log[k];
+  const sorted=Object.entries(APP.log).sort(([a],[b])=>parseInt(a.slice(1))-parseInt(b.slice(1)));
+  APP.log={};sorted.forEach(([,v],i)=>{APP.log['D'+(i+1)]=v;});
+  APP.dayCount=sorted.length;
+  save();renderLogList();renderStats();renderCal();showToast('Entrada eliminada');
+}
+
+// ── CLOSE MICRO ────────────────────────────────────────────────
+function calcBalance(){
+  const res={};
+  sessions.forEach(s=>{
+    let u=0,d=0;
+    s.exercises.forEach(ex=>{
+      const prev=APP.prevMicro?APP.prevMicro[ex.id]||[]:[];
+      const cm=ex.sets.find(st=>st.type!=='dropset')||ex.sets[0];
+      const pm=prev.find?prev.find(p=>p&&p.type!=='dropset')||prev[0]:prev[0];
+      if(cm&&pm){const r=cmpSet(cm,pm);if(r==='up')u++;if(r==='down')d++;}
+    });
+    res[s.id]=u-d;
+  });
+  return res;
+}
+function openCloseMicro(){
+  const entries=Object.values(APP.log);
+  const ws=entries.map(l=>l.w).filter(Boolean);
+  const cs=entries.map(l=>l.c).filter(Boolean);
+  const avgW=ws.length?(ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(2):null;
+  const avgC=cs.length?Math.round(cs.reduce((a,b)=>a+b,0)/cs.length):null;
+  const bal=calcBalance();const net=Object.values(bal).reduce((a,b)=>a+b,0);
+  document.getElementById('co-title').textContent=`Cerrar Microciclo ${APP.microNum}`;
+  document.getElementById('co-cal').value=APP.calObj;
+  document.getElementById('co-summary').innerHTML=`
+    <div class="summary-row"><span>Días registrados</span><span class="val">${entries.length}</span></div>
+    <div class="summary-row"><span>Peso medio</span><span class="val">${avgW?avgW+' kg':'Sin datos'}</span></div>
+    <div class="summary-row"><span>Calorías medias</span><span class="val">${avgC?avgC+' kcal':'Sin datos'}</span></div>
+    <div class="summary-row"><span>Saldo neto</span><span class="val" style="color:${net>=0?'var(--up)':'var(--down)'}">${net>=0?'+':''}${net} ejercicios</span></div>`;
+  document.getElementById('close-overlay').classList.add('open');
+}
+function confirmClose(){
+  const entries=Object.values(APP.log);
+  const ws=entries.map(l=>l.w).filter(Boolean);
+  const cs=entries.map(l=>l.c).filter(Boolean);
+  const avgW=ws.length?parseFloat((ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(2)):null;
+  const avgC=cs.length?Math.round(cs.reduce((a,b)=>a+b,0)/cs.length):null;
+  const newCal=parseInt(document.getElementById('co-cal').value)||APP.calObj;
+  const bal=calcBalance();
+  APP.snapshots.push({microNum:APP.microNum,sessions:JSON.parse(JSON.stringify(sessions))});
+  APP.wHist.push(avgW);APP.cHist.push(avgC);
+  Object.keys(APP.sessProg).forEach(id=>APP.sessProg[id].push(bal[id]||0));
+  const np={};sessions.forEach(s=>s.exercises.forEach(ex=>{np[ex.id]=ex.sets.map(s=>({...s}));}));
+  APP.prevMicro=np;APP.microNum+=1;APP.calObj=newCal;APP.sessions=null;APP.log={};APP.dayCount=0;
+  sessions=JSON.parse(JSON.stringify(SEED_SESSIONS));save();
+  closeOverlay('close-overlay');
+  document.getElementById('so-title').textContent=`Microciclo ${APP.microNum}`;
+  document.getElementById('so-cal').value=newCal;
+  document.getElementById('so-sub').textContent=`M${APP.microNum-1} archivado ✓ A por el siguiente.`;
+  document.getElementById('start-overlay').classList.add('open');
+}
+function startMicro(){
+  const c=parseInt(document.getElementById('so-cal').value);if(c)APP.calObj=c;
+  save();closeOverlay('start-overlay');initMicroPage();showToast(`Microciclo ${APP.microNum} iniciado ✓`);
+}
+
+// ── HISTORICO ──────────────────────────────────────────────────
+const SESS_FILTERS=['Todos','Empuje 1','Tracción 1','Pierna 1','Empuje 2','Tracción 2','Pierna 2'];
+let hFilter='Todos', hViewMicro=null;
+
+function renderHist(){
+  if(hViewMicro===null) hViewMicro=APP.microNum;
+  const completed=APP.microNum-1+8; // 8 historical + new completed
+  document.getElementById('hist-sub').textContent=`${APP.microNum-1} micros nuevos + 8 históricos`;
+  const isCurrent=hViewMicro===APP.microNum;
+  // Total available: M1-M8 historical + current new micros
+  const totalMicros=APP.microNum; // M1 = first new micro
+  document.getElementById('tt-prev').disabled=hViewMicro<=1;
+  document.getElementById('tt-next').disabled=isCurrent;
+  document.getElementById('tt-label').textContent=isCurrent?`M${APP.microNum} ↗ actual`:hViewMicro<=8?`M${hViewMicro} (histórico)`:`Microciclo ${hViewMicro}`;
+  document.getElementById('tt-sub').textContent=isCurrent?'Microciclo en curso':hViewMicro<=8?`Importado del Excel · micro ${hViewMicro} de 8 históricos`:`Micro ${hViewMicro} completado`;
+
+  document.getElementById('hist-filters').innerHTML=SESS_FILTERS.map(f=>
+    `<button class="filt-btn ${hFilter===f?'active':''}" onclick="setHF('${f}')">${f}</button>`).join('');
+
+  const cont=document.getElementById('hist-container');cont.innerHTML='';
+  let viewSessions,viewPrev,viewMn,isCurrentView;
+  if(isCurrent){
+    viewSessions=sessions;viewPrev=APP.prevMicro;viewMn=APP.microNum;isCurrentView=true;
+  } else {
+    const snap=APP.snapshots.find(s=>s.microNum===hViewMicro);
+    const prevSnap=APP.snapshots.find(s=>s.microNum===hViewMicro-1);
+    if(!snap){
+      cont.innerHTML=`<div style="padding:24px 16px;color:var(--text3);font-size:13px;">No hay datos para M${hViewMicro}.</div>`;return;
+    }
+    viewSessions=snap.sessions;
+    viewPrev=prevSnap?buildPrevMap(prevSnap.sessions):null;
+    viewMn=hViewMicro;isCurrentView=false;
+  }
+  const shown=hFilter==='Todos'?viewSessions:viewSessions.filter(s=>s.name===hFilter);
+  shown.forEach(sess=>{
+    const lbl=document.createElement('div');lbl.className='sec-label';
+    lbl.textContent=sess.name+' · '+sess.tag;cont.appendChild(lbl);
+    sess.exercises.forEach(ex=>{
+      const prev=viewPrev?viewPrev[ex.id]||[]:[];
+      let tc='flat',ti='→';
+      if(ex.sets.length&&prev.length){const r=cmpSet(ex.sets[0],prev[0]);if(r==='up'){tc='up';ti='↑';}if(r==='down'){tc='down';ti='↓';}}
+      const hasPrev=prev.length>0;
+      const prevRow=hasPrev?prev.map(s=>{const k=s.kg!=null?s.kg+'kg':'BW';return `<span class="mpill">M${viewMn-1}: ${k}×${s.reps}</span>`;}).join('')
+        :`<span style="font-size:11px;color:var(--text3)">Primer registro</span>`;
+      const currRow=ex.sets.map((s,i)=>{const c=hasPrev?cmpSet(s,prev[i]):'';const k=s.kg!=null?s.kg+'kg':'BW';return `<span class="mpill ${c}">M${viewMn}: ${k}×${s.reps}${s.type?' '+s.type:''}</span>`;}).join('');
+      const div=document.createElement('div');div.className='hist-ex';
+      div.innerHTML=`<div class="hist-ex-hdr"><span class="hex-name">${ex.name}</span><span class="htrend ${hasPrev?tc:'flat'}">${hasPrev?ti+' M'+(viewMn-1)+'→M'+viewMn:'M'+viewMn}</span></div>
+        <table class="hist-table">
+          <tr><td class="mnum">M${viewMn-1}</td><td><div class="sets-row">${prevRow}</div></td></tr>
+          <tr><td class="mnum">M${viewMn}${isCurrentView?'↗':''}</td><td><div class="sets-row">${currRow}</div></td></tr>
+        </table>`;
+      cont.appendChild(div);
+    });
+  });
+}
+function buildPrevMap(snap){
+  const m={};
+  const arr=snap.sessions||snap;
+  arr.forEach(s=>s.exercises.forEach(ex=>{m[ex.id]=ex.sets.map(s=>({...s}));}));
+  return m;
+}
+function ttNav(dir){hViewMicro=Math.max(1,Math.min(APP.microNum,hViewMicro+dir));renderHist();}
+function setHF(f){hFilter=f;renderHist();}
+
+// ── DASHBOARD ──────────────────────────────────────────────────
+let CH={};
+function dChart(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
+const XY={x:{grid:{color:'#2a2a3a'},ticks:{color:'#888899',font:{size:10}}},y:{grid:{color:'#2a2a3a'},ticks:{color:'#888899',font:{size:10}}}};
+function linReg(xs,ys){
+  const n=xs.length,mx=xs.reduce((a,b)=>a+b,0)/n,my=ys.reduce((a,b)=>a+b,0)/n;
+  let num=0,den=0;xs.forEach((x,i)=>{num+=(x-mx)*(ys[i]-my);den+=(x-mx)**2;});
+  const sl=den?num/den:0,ic=my-sl*mx;return{slope:sl,predict:x=>sl*x+ic};
+}
+
+function renderDash(){
+  // Combine historical + new completed micros for charts
+  const wh=[...HIST_WEIGHT,...APP.wHist];
+  const ch=[...HIST_CAL,...APP.cHist];
+  const realW=wh.map((v,i)=>v!=null?{i,v}:null).filter(Boolean);
+  const lastW=realW.length?realW[realW.length-1].v:null;
+  const startW=wh.find(v=>v!=null);
+  document.getElementById('d-weight').textContent=lastW?lastW+' kg':'—';
+  const gain=lastW&&startW!=null?lastW-startW:null;
+  document.getElementById('d-gain').textContent=gain!=null?(gain>=0?'+':'')+gain.toFixed(2)+' kg':'—';
+  document.getElementById('d-gain-sub').textContent=startW!=null?`vs inicio (${startW} kg)`:'vs inicio';
+  const realC=ch.filter(Boolean);
+  const lastC=realC.length?realC[realC.length-1]:null;
+  document.getElementById('d-cals').textContent=lastC||'—';
+  document.getElementById('d-calobj').textContent=APP.calObj;
+
+  dChart('weight');
+  const wLabels=wh.map((_,i)=>i<8?`M${i+1}(h)`:`M${i+1}`);
+  let allLabels=[...wLabels],regLine=[];
+  if(realW.length>=2){
+    const reg=linReg(realW.map(p=>p.i),realW.map(p=>p.v));
+    regLine=wh.map((_,i)=>+reg.predict(i).toFixed(2));
+    const lastI=realW[realW.length-1].i;
+    for(let pi=1;pi<=4;pi++){allLabels.push(`M${wh.length+pi}*`);regLine.push(+reg.predict(lastI+pi).toFixed(2));}
+  }
+  const realFull=[...wh,...Array(regLine.length?4:0).fill(null)];
+  const wCtx=document.getElementById('weight-chart').getContext('2d');
+  CH['weight']=new Chart(wCtx,{type:'line',data:{labels:allLabels,datasets:[
+    {label:'Real',data:realFull,borderColor:'#c8f060',backgroundColor:'rgba(200,240,96,.07)',borderWidth:2,pointBackgroundColor:'#c8f060',pointRadius:3,tension:.35,fill:true,spanGaps:true},
+    ...(regLine.length?[{label:'Proyección',data:regLine,borderColor:'rgba(200,240,96,.45)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.35}]:[]),
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:XY}});
+
+  renderGoals(lastW,lastC,realW);
+
+  dChart('cal');
+  const cLabels=ch.map((_,i)=>i<8?`M${i+1}(h)`:`M${i+1}`);
+  CH['cal']=new Chart(document.getElementById('cal-chart').getContext('2d'),{type:'bar',
+    data:{labels:cLabels,datasets:[{data:ch,backgroundColor:ch.map(c=>c?(c>=APP.calObj?'rgba(76,219,122,.6)':'rgba(200,240,96,.4)'):'rgba(42,42,58,.4)'),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:XY}});
+
+  renderSessCharts();renderStagAlerts();
+}
+
+function renderGoals(lastW,lastC,realW){
+  const g=APP.goals;
+  document.getElementById('gw-input').value=g.w||'';
+  const startW=[...HIST_WEIGHT,...APP.wHist].find(v=>v!=null)||null;
+  if(g.w&&lastW&&startW){
+    const total=g.w-startW,done=lastW-startW;
+    const pct=total>0?Math.min(100,Math.round((done/total)*100)):0;
+    document.getElementById('gw-label').textContent=g.w+' kg';
+    const bar=document.getElementById('gw-bar');bar.style.width=Math.max(0,pct)+'%';
+    bar.className='prog-bar'+(pct>=100?' up':'');
+    let eta='';
+    if(realW&&realW.length>=2){
+      const reg=linReg(realW.map(p=>p.i),realW.map(p=>p.v));
+      eta=reg.slope>0.01?pct>=100?'🎯 Objetivo alcanzado':`Progreso: ${pct}% · Ritmo: +${reg.slope.toFixed(2)} kg/micro · ETA: ~${Math.ceil((g.w-lastW)/reg.slope)} micros`:'Ritmo insuficiente — revisa calorías';
+    } else eta=`Faltan ${(g.w-lastW).toFixed(1)} kg`;
+    document.getElementById('gw-eta').textContent=eta;
+  } else {
+    document.getElementById('gw-label').textContent='Sin definir';
+    document.getElementById('gw-bar').style.width='0%';
+    document.getElementById('gw-eta').textContent='Define un objetivo para ver proyección y ETA';
+  }
+  document.getElementById('gc-input').value=g.c||'';
+  if(g.c&&lastC){
+    const diff=lastC-g.c,pct=Math.min(100,Math.round((lastC/g.c)*100));
+    document.getElementById('gc-label').textContent=g.c+' kcal';
+    const bar=document.getElementById('gc-bar');bar.style.width=Math.min(100,pct)+'%';
+    bar.className='prog-bar'+(pct>=100?' up':pct>=80?'':' danger');
+    document.getElementById('gc-eta').textContent=diff>=0?`✓ ${lastC} kcal · ${diff} sobre objetivo`:`⚠ ${lastC} kcal · Faltan ${Math.abs(diff)} kcal`;
+  } else {
+    document.getElementById('gc-label').textContent='Sin definir';
+    document.getElementById('gc-bar').style.width='0%';
+    document.getElementById('gc-eta').textContent='';
+  }
+}
+function saveGoal(type){
+  const v=type==='w'?parseFloat(document.getElementById('gw-input').value):parseInt(document.getElementById('gc-input').value);
+  if(!v){showToast('Introduce un valor válido');return;}
+  APP.goals[type]=v;save();
+  const allW=[...HIST_WEIGHT,...APP.wHist];
+  const realW=allW.map((v,i)=>v!=null?{i,v}:null).filter(Boolean);
+  const lastW=realW.length?realW[realW.length-1].v:null;
+  const lastC=[...HIST_CAL,...APP.cHist].filter(Boolean).slice(-1)[0]||null;
+  renderGoals(lastW,lastC,realW);showToast('Objetivo guardado ✓');
+}
+
+function renderSessCharts(){
+  const bal=calcBalance();
+  // Combine historical session progress + new micros
+  const combinedProg={};
+  Object.keys(SESS_META).forEach(id=>{
+    combinedProg[id]=[...HIST_SESS_PROG[id],...(APP.sessProg[id]||[])];
+  });
+  const nDone=8+APP.microNum-1;
+  const allLabels=[];
+  for(let i=2;i<=nDone+1;i++) allLabels.push(i===nDone+1?`M${i}↗`:i<=9?`M${i}(h)`:`M${i}`);
+
+  dChart('sess-chart');
+  setTimeout(()=>{
+    const ctx=document.getElementById('sess-chart').getContext('2d');
+    const datasets=Object.keys(combinedProg).map(id=>{
+      const hist=combinedProg[id];const color=SESS_META[id]?.color||'#888';
+      const full=[...hist,bal[id]!=null?bal[id]:null];
+      return {label:SESS_META[id]?.name||id,data:full,borderColor:color,backgroundColor:color+'22',borderWidth:2,pointRadius:3,tension:.35,spanGaps:true,
+        pointBackgroundColor:full.map((v,i)=>i===full.length-1?color:v>0?'#4cdb7a':v<0?'#f04c4c':'#55556a')};
+    });
+    CH['sess-chart']=new Chart(ctx,{type:'line',data:{labels:allLabels,datasets},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,labels:{color:'#888899',font:{size:10},boxWidth:11,padding:7}}},
+        scales:{...XY,y:{...XY.y,title:{display:true,text:'Saldo ↑/↓',color:'#55556a',font:{size:10}}}}}});
+  },50);
+
+  const grid=document.getElementById('sess-cards');grid.innerHTML='';
+  Object.keys(combinedProg).forEach(id=>{
+    const hist=combinedProg[id];const color=SESS_META[id]?.color||'#888';
+    const full=[...hist,bal[id]!=null?bal[id]:null];
+    const latest=bal[id]!=null?bal[id]:hist[hist.length-1];
+    const tc=latest>0?'var(--up)':latest<0?'var(--down)':'var(--text3)';
+    const ti=latest>0?'↑':latest<0?'↓':'→';
+    const cid='sc-'+id;
+    const card=document.createElement('div');card.className='dcard';
+    card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+      <div class="dlabel" style="margin:0">${SESS_META[id]?.name||id}</div>
+      <span style="font-size:16px;font-weight:700;color:${tc}">${ti}${Math.abs(latest)}</span></div>
+      <div style="height:68px"><canvas id="${cid}"></canvas></div>`;
+    grid.appendChild(card);
+    setTimeout(()=>{
+      dChart(cid);
+      CH[cid]=new Chart(document.getElementById(cid).getContext('2d'),{type:'bar',
+        data:{labels:allLabels,datasets:[{data:full,backgroundColor:full.map(v=>v>0?'rgba(76,219,122,.55)':v<0?'rgba(240,76,76,.55)':'rgba(85,85,106,.4)'),borderColor:full.map(v=>v>0?'#4cdb7a':v<0?'#f04c4c':'#55556a'),borderWidth:1,borderRadius:3}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+          scales:{x:{grid:{display:false},ticks:{color:'#55556a',font:{size:8}}},y:{grid:{color:'#2a2a3a'},ticks:{color:'#55556a',font:{size:8},stepSize:1},suggestedMin:-3,suggestedMax:4}}}});
+    },80);
+  });
+}
+
+function renderStagAlerts(){
+  const cont=document.getElementById('stag-alerts');cont.innerHTML='';
+  const combined={};
+  Object.keys(SESS_META).forEach(id=>{combined[id]=[...HIST_SESS_PROG[id],...(APP.sessProg[id]||[])];});
+  Object.keys(combined).forEach(id=>{
+    const sp=combined[id];
+    if(sp.length>=3&&sp.slice(-3).every(v=>v<=0)){
+      const d=document.createElement('div');d.className='alert-card';
+      d.innerHTML=`<strong>⚠️ ${SESS_META[id]?.name||id}</strong>3 micros consecutivos sin mejora neta`;
+      cont.appendChild(d);
+    }
+  });
+}
+
+// ── EDITOR TOOLS ───────────────────────────────────────────────
+function quickEditLog(){
+  const day=document.getElementById('eq-day').value.trim();
+  const w=parseFloat(document.getElementById('eq-w').value);
+  const c=parseInt(document.getElementById('eq-c').value);
+  if(!day){document.getElementById('eq-status').textContent='Introduce un día (ej: D3)';return;}
+  APP.log[day]={w:w||null,c:c||null};
+  save();renderLogList();renderStats();
+  document.getElementById('eq-status').textContent=`✓ ${day} guardado`;
+  document.getElementById('eq-day').value='';document.getElementById('eq-w').value='';document.getElementById('eq-c').value='';
+}
+
+function exportData(){
+  const data=localStorage.getItem('b26v2');
+  if(!data){showToast('No hay datos');return;}
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(data).then(()=>showToast('✓ Copiado al portapapeles')).catch(()=>{
+      document.getElementById('import-area').value=data;showToast('Copia el texto del área de abajo');
+    });
+  } else {
+    document.getElementById('import-area').value=data;showToast('Copia el texto del área de abajo');
+  }
+}
+
+function importData(){
+  const raw=document.getElementById('import-area').value.trim();
+  if(!raw){showToast('Pega el JSON primero');return;}
+  try{
+    JSON.parse(raw);
+    localStorage.setItem('b26v2',raw);
+    showToast('Importado ✓ Recargando...');
+    setTimeout(()=>location.reload(),800);
+  } catch(e){showToast('JSON inválido — revisa el formato');}
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+function initMicroPage(){
+  document.getElementById('micro-title').textContent='Microciclo '+APP.microNum;
+  document.getElementById('close-mnum').textContent=APP.microNum;
+  renderCal();renderStats();renderSessions();renderLogList();
+}
+
+initMicroPage();
+</script>
+</body>
+</html>
