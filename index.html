@@ -163,7 +163,6 @@ canvas{width:100%!important;}
 .page-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;letter-spacing:1px;}
 .page-sub{font-size:13px;color:var(--text3);margin-top:2px;}
 .ldot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
-/* EDITOR PANEL */
 .editor-panel{margin:0 12px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);overflow:hidden;}
 .editor-hdr{padding:12px 16px;background:var(--surface2);display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
 .editor-hdr-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;}
@@ -217,9 +216,9 @@ canvas{width:100%!important;}
     <div class="page-sub" id="hist-sub">microciclos completados</div>
   </div>
   <div class="tt-bar">
-    <button class="tt-btn" id="tt-prev" onclick="ttNav(-1)">‹</button>
-    <div class="tt-label" id="tt-label">M1 ↗ actual</div>
-    <button class="tt-btn" id="tt-next" onclick="ttNav(+1)">›</button>
+    <button class="tt-btn" id="tt-prev" onclick="ttNav(-1)">&#8249;</button>
+    <div class="tt-label" id="tt-label">M1 actual</div>
+    <button class="tt-btn" id="tt-next" onclick="ttNav(+1)">&#8250;</button>
   </div>
   <div class="tt-sub" id="tt-sub"></div>
   <div class="hist-filters" id="hist-filters"></div>
@@ -273,7 +272,7 @@ canvas{width:100%!important;}
   <div class="dash-sec">
     <div class="dash-title">Progresión neta por sesión</div>
     <div class="dcard wide" style="margin-bottom:10px">
-      <div class="dlabel">Saldo ↑/↓ ejercicios por microciclo</div>
+      <div class="dlabel">Saldo ejercicios por microciclo</div>
       <div class="chart-wrap" style="height:155px;margin-top:8px"><canvas id="sess-chart"></canvas></div>
     </div>
     <div id="sess-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
@@ -282,98 +281,68 @@ canvas{width:100%!important;}
 
 <!-- EDITOR PAGE -->
 <div class="page" id="page-edit">
-  <div class="page-header"><div class="page-title">Editor</div><div class="page-sub">Cómo editar datos históricos</div></div>
-
+  <div class="page-header"><div class="page-title">Editor</div><div class="page-sub">Gestión de datos</div></div>
   <div class="editor-panel">
     <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
-      <span class="editor-hdr-title">📱 Cómo editar microciclos antiguos</span>
+      <span class="editor-hdr-title">📱 Editar microciclos antiguos (consola)</span>
       <span style="color:var(--text3)">▾</span>
     </div>
     <div class="editor-body">
-      <div class="editor-step"><strong>¿Qué es el localStorage?</strong>Todos los datos de la app se guardan en el navegador en un objeto JSON con clave <code style="color:var(--accent)">b26v2</code>. Para editarlo, usas la consola del navegador — no hace falta instalar nada.</div>
-
-      <div class="editor-step"><strong>Paso 1 — Abrir la consola</strong>
-      · En Chrome/Safari móvil: conecta el móvil al PC, abre <code style="color:var(--accent)">chrome://inspect</code> y selecciona la pestaña.<br>
-      · En PC: pulsa <kbd style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px">F12</kbd> → pestaña "Console".</div>
-
-      <div class="editor-step"><strong>Paso 2 — Ver todos los datos actuales</strong></div>
+      <div class="editor-step"><strong>Ver todos los datos</strong></div>
       <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
 console.log(JSON.stringify(d, null, 2));</div>
-
-      <div class="editor-step"><strong>Paso 3a — Editar peso medio de un micro completado</strong><br>Por ejemplo, corregir el peso del M2 (índice 1 en wHist):</div>
+      <div class="editor-step"><strong>Editar peso medio de un micro (wHist[0] = M1, [1] = M2...)</strong></div>
       <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
-d.wHist[1] = 74.5;  // cambia el peso del M2
+d.wHist[0] = 74.5;
 localStorage.setItem('b26v2', JSON.stringify(d));
 location.reload();</div>
-
-      <div class="editor-step"><strong>Paso 3b — Editar calorías medias de un micro</strong></div>
+      <div class="editor-step"><strong>Editar calorías medias de un micro</strong></div>
       <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
-d.cHist[0] = 3100;  // M1 = índice 0
+d.cHist[0] = 3100;
 localStorage.setItem('b26v2', JSON.stringify(d));
 location.reload();</div>
-
-      <div class="editor-step"><strong>Paso 3c — Editar kilos/reps de un ejercicio en un snapshot</strong><br>Los snapshots guardan las sesiones completas. Por ejemplo, editar el press banca del M1 (snapshot índice 0), primera serie:</div>
+      <div class="editor-step"><strong>Editar kilos/reps de un ejercicio en snapshot</strong></div>
       <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
-// snapshots[0] = M1, sessions[0] = Empuje 1, exercises[0] = Press banca
+// snapshots[0]=M1, sessions[0]=Empuje1, exercises[0]=Press banca
 d.snapshots[0].sessions[0].exercises[0].sets[0].kg = 87.5;
-d.snapshots[0].sessions[0].exercises[0].sets[0].reps = 6;
 localStorage.setItem('b26v2', JSON.stringify(d));
 location.reload();</div>
-
-      <div class="editor-step"><strong>Paso 3d — Editar el microciclo ACTUAL (en curso)</strong></div>
+      <div class="editor-step"><strong>Editar micro actual (en curso)</strong></div>
       <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
-// sessions[2] = Pierna 1, exercises[1] = Sentadilla
 d.sessions[2].exercises[1].sets[0].kg = 45;
 localStorage.setItem('b26v2', JSON.stringify(d));
 location.reload();</div>
-
-      <div class="editor-step"><strong>Paso 3e — Corregir una entrada del log de peso/calorías</strong></div>
-      <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
-d.log['D3'] = {w: 73.8, c: 3150};  // sobrescribe día 3
-localStorage.setItem('b26v2', JSON.stringify(d));
-location.reload();</div>
-
-      <div class="editor-step"><strong>🔢 Índices de sesiones (sessions[])</strong><br>
-      0 = Empuje 1 · 1 = Tracción 1 · 2 = Pierna 1 · 3 = Empuje 2 · 4 = Tracción 2 · 5 = Pierna 2</div>
-
-      <div class="editor-step"><strong>💡 Tip: ver el índice de un ejercicio</strong></div>
+      <div class="editor-step"><strong>Índices sesiones: 0=E1 · 1=T1 · 2=P1 · 3=E2 · 4=T2 · 5=P2</strong></div>
+      <div class="editor-step"><strong>Ver índices de ejercicios de una sesión</strong></div>
       <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
 d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
-
-      <div class="editor-step"><strong>🛡 Antes de editar, haz una copia de seguridad</strong></div>
-      <div class="code-block">copy(localStorage.getItem('b26v2'));
-// Pega en un .txt para tener backup</div>
+      <div class="editor-step"><strong>Backup antes de editar</strong></div>
+      <div class="code-block">copy(localStorage.getItem('b26v2'));</div>
     </div>
   </div>
-
-  <!-- Quick editor tool -->
   <div class="editor-panel">
     <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
-      <span class="editor-hdr-title">🛠 Herramienta rápida: editar log de peso/cal</span>
+      <span class="editor-hdr-title">🛠 Editar log de peso/cal</span>
       <span style="color:var(--text3)">▾</span>
     </div>
     <div class="editor-body">
-      <div class="editor-step">Edita o añade entradas del log del micro actual directamente:</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <input id="eq-day" type="text" placeholder="Día (D1, D2...)" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;flex:1;min-width:100px"/>
-        <input id="eq-w" type="number" step="0.1" placeholder="Peso kg" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;width:100px"/>
-        <input id="eq-c" type="number" placeholder="Calorías" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;width:100px"/>
+        <input id="eq-day" type="text" placeholder="Día (D1, D2...)" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;flex:1;min-width:80px"/>
+        <input id="eq-w" type="number" step="0.1" placeholder="Peso kg" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;width:90px"/>
+        <input id="eq-c" type="number" placeholder="Kcal" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;width:90px"/>
         <button onclick="quickEditLog()" style="padding:9px 16px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:13px;border:none;cursor:pointer;">Guardar</button>
       </div>
       <div id="eq-status" style="font-size:12px;color:var(--text3);"></div>
     </div>
   </div>
-
   <div class="editor-panel">
     <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
       <span class="editor-hdr-title">📤 Exportar / importar datos</span>
       <span style="color:var(--text3)">▾</span>
     </div>
     <div class="editor-body">
-      <div class="editor-step">Exporta todos tus datos como texto para guardar una copia o transferirlos a otro dispositivo.</div>
       <button onclick="exportData()" style="padding:10px 18px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;margin-bottom:10px;width:100%">📋 Copiar datos al portapapeles</button>
-      <div class="editor-step">Para importar en otro dispositivo, pega el JSON exportado aquí:</div>
-      <textarea id="import-area" placeholder='Pega aquí el JSON exportado...' style="width:100%;height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-family:monospace;resize:vertical;outline:none;"></textarea>
+      <textarea id="import-area" placeholder="Pega aquí el JSON exportado..." style="width:100%;height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-family:monospace;resize:vertical;outline:none;"></textarea>
       <button onclick="importData()" style="padding:10px 18px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:13px;border:none;cursor:pointer;margin-top:8px;width:100%">Importar y recargar</button>
     </div>
   </div>
@@ -395,7 +364,7 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
   </button>
 </div>
 
-<!-- EDIT EXERCISE MODAL -->
+<!-- MODALES -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal">
     <div class="modal-title" id="m-exname"></div>
@@ -408,12 +377,10 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
     </div>
   </div>
 </div>
-
-<!-- CLOSE MICRO -->
 <div class="full-overlay" id="close-overlay">
   <div class="fbox">
     <div class="fbox-title" id="co-title">Cerrar Microciclo 1</div>
-    <div class="fbox-sub">Archiva el micro y prepara el siguiente. Revisa el resumen.</div>
+    <div class="fbox-sub">Archiva el micro y prepara el siguiente.</div>
     <div class="summary" id="co-summary"></div>
     <div class="sfield"><label>Objetivo calorías siguiente micro (kcal/día)</label><input id="co-cal" type="number" placeholder="3200"/></div>
     <div class="modal-actions">
@@ -422,197 +389,137 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
     </div>
   </div>
 </div>
-
-<!-- START NEW MICRO -->
 <div class="full-overlay" id="start-overlay">
   <div class="fbox">
     <div class="fbox-title" id="so-title" style="color:var(--accent)">Microciclo 2</div>
-    <div class="fbox-sub" id="so-sub">Micro anterior archivado ✓</div>
+    <div class="fbox-sub" id="so-sub">Micro anterior archivado.</div>
     <div class="sfield"><label>Objetivo calorías diarias (kcal/día)</label><input id="so-cal" type="number" placeholder="3200"/></div>
     <button class="btn btn-primary" style="width:100%" onclick="startMicro()">Empezar microciclo</button>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// ── SEED DATA ──────────────────────────────────────────────────
+// ── CONSTANTES ESTÁTICAS (no dependen de nada) ─────────────────
+const SCHEDULE = ['empuje1','traccion1','rest','pierna1','empuje2','rest','traccion2','pierna2','rest'];
+const SSHORT   = ['E1','T1','—','P1','E2','—','T2','P2','—'];
+const SCOLORS  = ['push','pull','rd','legs','push','rd','pull','legs','rd'];
+const SESS_FILTERS = ['Todos','Empuje 1','Tracción 1','Pierna 1','Empuje 2','Tracción 2','Pierna 2'];
+const SESS_META = {
+  empuje1:{name:'Empuje 1',color:'#c8f060'}, traccion1:{name:'Tracción 1',color:'#60d0f0'},
+  pierna1:{name:'Pierna 1',color:'#f0b040'},  empuje2:{name:'Empuje 2',color:'#b8e050'},
+  traccion2:{name:'Tracción 2',color:'#50c0e0'}, pierna2:{name:'Pierna 2',color:'#e0a030'},
+};
+
+// ── DATOS DE EJERCICIOS ────────────────────────────────────────
+// Bloque abdominales/antebrazo que se repite (con sufijo distinto por sesión)
+function abBlock(sfx) {
+  return [
+    {id:'crunch_polea_'+sfx, name:'Crunch abdominal polea', obs:'Cadera fija', rir:1, sets:[{kg:35,reps:10,type:''}]},
+    {id:'flex_ante_'+sfx,    name:'Flexores antebrazo polea', obs:'Altura mínima', rir:1, sets:[{kg:35,reps:10,type:''}]},
+    {id:'ext_ante_'+sfx,     name:'Extensores antebrazo polea', obs:'Altura 21', rir:1, sets:[{kg:35,reps:8,type:''}]},
+    {id:'dragon_flag_'+sfx,  name:'Dragon flag', obs:'Tuck avanzado', rir:1, sets:[{kg:null,reps:6,type:''}]},
+  ];
+}
+
 const SEED_SESSIONS = [
-  {id:'empuje1',name:'Empuje 1',tag:'Pecho · Hombro · Tríceps',exercises:[
-    {id:'press_banca',name:'Press banca',obs:'Calentamiento y aproximación',rir:1,sets:[{kg:85,reps:6,type:'topset'},{kg:70,reps:8,type:'backoff'}]},
-    {id:'triceps_katana',name:'Tríceps katana',obs:'Altura 13, intentar apoyar codo',rir:1,sets:[{kg:7.5,reps:10,type:''},{kg:5,reps:'Fallo',type:'dropset'}]},
-    {id:'press_incl_maq',name:'Press inclinado máquina',obs:'Altura 4',rir:0,sets:[{kg:30,reps:8,type:''}]},
-    {id:'pajaros_polea',name:'Pájaros polea cruzada',obs:'Bilateral, altura 22',rir:0,sets:[{kg:5,reps:10,type:''}]},
-    {id:'ext_triceps',name:'Extensión tríceps polea',obs:'Codos juntos hasta el final',rir:0,sets:[{kg:17.5,reps:8,type:''}]},
-    {id:'lat_polea',name:'Elevaciones laterales polea',obs:'Muñequera bajo codo, altura 12',rir:0,sets:[{kg:13.75,reps:8,type:''},{kg:7.5,reps:'Fallo',type:'dropset'}]},
-    {id:'crunch_polea_e1',name:'Crunch abdominal polea',obs:'Cadera fija',rir:1,sets:[{kg:35,reps:10,type:''}]},
-    {id:'flex_ante_e1',name:'Flexores antebrazo polea',obs:'Altura mínima',rir:1,sets:[{kg:35,reps:10,type:''}]},
-    {id:'ext_ante_e1',name:'Extensores antebrazo polea',obs:'Altura 21',rir:1,sets:[{kg:35,reps:8,type:''}]},
-    {id:'dragon_flag_e1',name:'Dragon flag',obs:'Tuck avanzado',rir:1,sets:[{kg:null,reps:6,type:''}]},
+  {id:'empuje1', name:'Empuje 1', tag:'Pecho · Hombro · Tríceps', exercises:[
+    {id:'press_banca',     name:'Press banca',              obs:'Calentamiento y aproximación',      rir:1, sets:[{kg:85,reps:6,type:'topset'},{kg:70,reps:8,type:'backoff'}]},
+    {id:'triceps_katana',  name:'Tríceps katana',           obs:'Altura 13, intentar apoyar codo',   rir:1, sets:[{kg:7.5,reps:10,type:''},{kg:5,reps:'Fallo',type:'dropset'}]},
+    {id:'press_incl_maq',  name:'Press inclinado máquina',  obs:'Altura 4',                          rir:0, sets:[{kg:30,reps:8,type:''}]},
+    {id:'pajaros_polea',   name:'Pájaros polea cruzada',    obs:'Bilateral, altura 22',              rir:0, sets:[{kg:5,reps:10,type:''}]},
+    {id:'ext_triceps',     name:'Extensión tríceps polea',  obs:'Codos juntos hasta el final',       rir:0, sets:[{kg:17.5,reps:8,type:''}]},
+    {id:'lat_polea',       name:'Elevaciones laterales polea', obs:'Muñequera bajo codo, altura 12', rir:0, sets:[{kg:13.75,reps:8,type:''},{kg:7.5,reps:'Fallo',type:'dropset'}]},
+    ...abBlock('e1'),
   ]},
-  {id:'traccion1',name:'Tracción 1',tag:'Espalda · Bíceps',exercises:[
-    {id:'remo_libre',name:'Remo libre',obs:'Muy técnico y aproximando',rir:1,sets:[{kg:70,reps:10,type:''}]},
-    {id:'traccion_unilat',name:'Tracción polea alta unilateral',obs:'Banco pie y medio, altura máxima',rir:0,sets:[{kg:25,reps:8,type:''}]},
-    {id:'curl_bayesian',name:'Curl bayesian unilateral',obs:'Tensionado, un paso adelante',rir:0,sets:[{kg:13.75,reps:9,type:''}]},
-    {id:'remo_alto_maq',name:'Remo alto máquina bilateral',obs:'Pecho bien apoyado',rir:0,sets:[{kg:55,reps:7,type:''},{kg:40,reps:'Fallo',type:'dropset'}]},
-    {id:'predicador_manc',name:'Predicador unilateral mancuerna',obs:'Banco scot perpendicular',rir:0,sets:[{kg:12,reps:8,type:''}]},
-    {id:'retracciones',name:'Retracciones escapulares banco',obs:'Muy controlado',rir:1,sets:[{kg:22,reps:11,type:''}]},
+  {id:'traccion1', name:'Tracción 1', tag:'Espalda · Bíceps', exercises:[
+    {id:'remo_libre',       name:'Remo libre',                        obs:'Muy técnico y aproximando',          rir:1, sets:[{kg:70,reps:10,type:''}]},
+    {id:'traccion_unilat',  name:'Tracción polea alta unilateral',    obs:'Banco pie y medio, altura máxima',   rir:0, sets:[{kg:25,reps:8,type:''}]},
+    {id:'curl_bayesian',    name:'Curl bayesian unilateral',          obs:'Tensionado, un paso adelante',       rir:0, sets:[{kg:13.75,reps:9,type:''}]},
+    {id:'remo_alto_maq',    name:'Remo alto máquina bilateral',       obs:'Pecho bien apoyado',                 rir:0, sets:[{kg:55,reps:7,type:''},{kg:40,reps:'Fallo',type:'dropset'}]},
+    {id:'predicador_manc',  name:'Predicador unilateral mancuerna',   obs:'Banco scot perpendicular',           rir:0, sets:[{kg:12,reps:8,type:''}]},
+    {id:'retracciones',     name:'Retracciones escapulares banco',    obs:'Muy controlado',                     rir:1, sets:[{kg:22,reps:11,type:''}]},
   ]},
-  {id:'pierna1',name:'Pierna 1',tag:'Cuádriceps · Femoral · Gemelos',exercises:[
-    {id:'aduccion_maq_p1',name:'Aducción en máquina',obs:'Límite al 3, pies sin apoyar',rir:0,sets:[{kg:70,reps:11,type:''},{kg:40,reps:'Fallo',type:'dropset'}]},
-    {id:'sentadilla_multi',name:'Sentadilla en multipower',obs:'Usar tacos full cuádriceps',rir:1,sets:[{kg:40,reps:10,type:''}]},
-    {id:'gemelos_pie',name:'Gemelos de pie máquina',obs:'Última serie parciales al fallo',rir:0,sets:[{kg:120,reps:12,type:''}]},
-    {id:'ext_rodilla_unilat',name:'Extensión rodilla máquina',obs:'Unilateral, distancia 7',rir:0,sets:[{kg:27.5,reps:10,type:''},{kg:15,reps:'Fallo',type:'dropset'}]},
-    {id:'curl_fem_sentado',name:'Curl femoral sentado',obs:'Distancia asiento al 3',rir:0,sets:[{kg:40,reps:10,type:''},{kg:25,reps:'Fallo',type:'dropset'}]},
-    {id:'ext_lumbares',name:'Extensiones lumbares',obs:'Apoyo en cadera full lumbar',rir:1,sets:[{kg:10,reps:9,type:''}]},
-    {id:'crunch_polea_p1',name:'Crunch abdominal polea',obs:'Cadera fija',rir:1,sets:[{kg:35,reps:10,type:''}]},
-    {id:'flex_ante_p1',name:'Flexores antebrazo polea',obs:'Altura mínima',rir:1,sets:[{kg:35,reps:10,type:''}]},
-    {id:'ext_ante_p1',name:'Extensores antebrazo polea',obs:'Altura 21',rir:1,sets:[{kg:35,reps:8,type:''}]},
-    {id:'dragon_flag_p1',name:'Dragon flag',obs:'Tuck avanzado',rir:1,sets:[{kg:null,reps:6,type:''}]},
+  {id:'pierna1', name:'Pierna 1', tag:'Cuádriceps · Femoral · Gemelos', exercises:[
+    {id:'aduccion_maq_p1',     name:'Aducción en máquina',         obs:'Límite al 3, pies sin apoyar',       rir:0, sets:[{kg:70,reps:11,type:''},{kg:40,reps:'Fallo',type:'dropset'}]},
+    {id:'sentadilla_multi',    name:'Sentadilla en multipower',     obs:'Usar tacos full cuádriceps',         rir:1, sets:[{kg:40,reps:10,type:''}]},
+    {id:'gemelos_pie',         name:'Gemelos de pie máquina',       obs:'Última serie parciales al fallo',    rir:0, sets:[{kg:120,reps:12,type:''}]},
+    {id:'ext_rodilla_unilat',  name:'Extensión rodilla máquina',    obs:'Unilateral, distancia 7',            rir:0, sets:[{kg:27.5,reps:10,type:''},{kg:15,reps:'Fallo',type:'dropset'}]},
+    {id:'curl_fem_sentado',    name:'Curl femoral sentado',         obs:'Distancia asiento al 3',             rir:0, sets:[{kg:40,reps:10,type:''},{kg:25,reps:'Fallo',type:'dropset'}]},
+    {id:'ext_lumbares',        name:'Extensiones lumbares',         obs:'Apoyo en cadera full lumbar',        rir:1, sets:[{kg:10,reps:9,type:''}]},
+    ...abBlock('p1'),
   ]},
-  {id:'empuje2',name:'Empuje 2',tag:'Pecho · Hombro · Tríceps',exercises:[
-    {id:'press_incl_manc',name:'Press inclinado mancuernas',obs:'Calentando y aproximando',rir:1,sets:[{kg:28,reps:8,type:''}]},
-    {id:'kaz_press',name:'Kaz press',obs:'Topes al 4',rir:1,sets:[{kg:40,reps:10,type:''}]},
-    {id:'aperturas_polea',name:'Aperturas polea sentado',obs:'Altura 15, distancia pie y medio',rir:0,sets:[{kg:17.5,reps:10,type:''}]},
-    {id:'press_militar',name:'Press militar máquina',obs:'Altura 7',rir:0,sets:[{kg:25,reps:10,type:''}]},
-    {id:'patada_unilat',name:'Patada unilateral polea',obs:'Altura 13',rir:0,sets:[{kg:10,reps:9,type:''},{kg:5,reps:'Fallo',type:'dropset'}]},
-    {id:'laterales_banco',name:'Laterales mancuernas banco',obs:'',rir:0,sets:[{kg:9,reps:8,type:''},{kg:6,reps:'Fallo',type:'dropset'}]},
+  {id:'empuje2', name:'Empuje 2', tag:'Pecho · Hombro · Tríceps', exercises:[
+    {id:'press_incl_manc',  name:'Press inclinado mancuernas',   obs:'Calentando y aproximando',           rir:1, sets:[{kg:28,reps:8,type:''}]},
+    {id:'kaz_press',        name:'Kaz press',                    obs:'Topes al 4',                         rir:1, sets:[{kg:40,reps:10,type:''}]},
+    {id:'aperturas_polea',  name:'Aperturas polea sentado',      obs:'Altura 15, distancia pie y medio',   rir:0, sets:[{kg:17.5,reps:10,type:''}]},
+    {id:'press_militar',    name:'Press militar máquina',        obs:'Altura 7',                           rir:0, sets:[{kg:25,reps:10,type:''}]},
+    {id:'patada_unilat',    name:'Patada unilateral polea',      obs:'Altura 13',                          rir:0, sets:[{kg:10,reps:9,type:''},{kg:5,reps:'Fallo',type:'dropset'}]},
+    {id:'laterales_banco',  name:'Laterales mancuernas banco',   obs:'',                                   rir:0, sets:[{kg:9,reps:8,type:''},{kg:6,reps:'Fallo',type:'dropset'}]},
   ]},
-  {id:'traccion2',name:'Tracción 2',tag:'Espalda · Bíceps · Core',exercises:[
-    {id:'remo_prono',name:'Remo polea prono',obs:'Agarre abierto, espalda anclada',rir:1,sets:[{kg:65,reps:10,type:''}]},
-    {id:'jalon_neutro',name:'Jalón al pecho neutro',obs:'Codos bajan perpendicular al suelo',rir:1,sets:[{kg:65,reps:9,type:''}]},
-    {id:'dead_curl',name:'Dead curl banco scot',obs:'Apoyando codos, altura 6',rir:0,sets:[{kg:12,reps:10,type:''}]},
-    {id:'remo_dorian',name:'Remo dorian máquina unilateral',obs:'Altura 3, anclando otro brazo',rir:0,sets:[{kg:55,reps:9,type:''},{kg:40,reps:'Fallo',type:'dropset'}]},
-    {id:'curl_martillo',name:'Curl martillo unilateral',obs:'',rir:0,sets:[{kg:14,reps:7,type:''},{kg:9,reps:'Fallo',type:'dropset'}]},
-    {id:'crunch_polea_t1',name:'Crunch abdominal polea',obs:'Cadera fija',rir:1,sets:[{kg:35,reps:10,type:''}]},
-    {id:'flex_ante_t1',name:'Flexores antebrazo polea',obs:'Altura mínima',rir:1,sets:[{kg:35,reps:10,type:''}]},
-    {id:'ext_ante_t1',name:'Extensores antebrazo polea',obs:'Altura 21',rir:1,sets:[{kg:35,reps:8,type:''}]},
-    {id:'dragon_flag_t1',name:'Dragon flag',obs:'Tuck avanzado',rir:1,sets:[{kg:null,reps:6,type:''}]},
+  {id:'traccion2', name:'Tracción 2', tag:'Espalda · Bíceps · Core', exercises:[
+    {id:'remo_prono',      name:'Remo polea prono',                 obs:'Agarre abierto, espalda anclada',        rir:1, sets:[{kg:65,reps:10,type:''}]},
+    {id:'jalon_neutro',    name:'Jalón al pecho neutro',            obs:'Codos bajan perpendicular al suelo',     rir:1, sets:[{kg:65,reps:9,type:''}]},
+    {id:'dead_curl',       name:'Dead curl banco scot',             obs:'Apoyando codos, altura 6',               rir:0, sets:[{kg:12,reps:10,type:''}]},
+    {id:'remo_dorian',     name:'Remo dorian máquina unilateral',   obs:'Altura 3, anclando otro brazo',          rir:0, sets:[{kg:55,reps:9,type:''},{kg:40,reps:'Fallo',type:'dropset'}]},
+    {id:'curl_martillo',   name:'Curl martillo unilateral',         obs:'',                                       rir:0, sets:[{kg:14,reps:7,type:''},{kg:9,reps:'Fallo',type:'dropset'}]},
+    ...abBlock('t2'),
   ]},
-  {id:'pierna2',name:'Pierna 2',tag:'Femoral · Cuádriceps · Gemelos',exercises:[
-    {id:'peso_muerto_rum',name:'Peso muerto rumano prono',obs:'Calentando y aproximando',rir:1,sets:[{kg:125,reps:6,type:''}]},
-    {id:'ext_rodilla_bilat',name:'Extensión rodilla bilateral',obs:'Distancia 7',rir:0,sets:[{kg:50,reps:10,type:''}]},
-    {id:'aduccion_maq_p2',name:'Aducción en máquina',obs:'Límite al 3',rir:0,sets:[{kg:70,reps:10,type:''},{kg:45,reps:'Fallo',type:'dropset'}]},
-    {id:'gemelos_prensa',name:'Gemelos en prensa negra',obs:'Parciales al fallo última serie',rir:0,sets:[{kg:130,reps:10,type:''}]},
-    {id:'curl_fem_tumbado',name:'Curl femoral tumbado',obs:'',rir:0,sets:[{kg:25,reps:10,type:''}]},
-    {id:'prensa_cuad',name:'Prensa amarilla cuádriceps',obs:'Aproximando',rir:1,sets:[{kg:120,reps:9,type:''}]},
+  {id:'pierna2', name:'Pierna 2', tag:'Femoral · Cuádriceps · Gemelos', exercises:[
+    {id:'peso_muerto_rum',    name:'Peso muerto rumano prono',        obs:'Calentando y aproximando',           rir:1, sets:[{kg:125,reps:6,type:''}]},
+    {id:'ext_rodilla_bilat',  name:'Extensión rodilla bilateral',     obs:'Distancia 7',                        rir:0, sets:[{kg:50,reps:10,type:''}]},
+    {id:'aduccion_maq_p2',    name:'Aducción en máquina',            obs:'Límite al 3',                        rir:0, sets:[{kg:70,reps:10,type:''},{kg:45,reps:'Fallo',type:'dropset'}]},
+    {id:'gemelos_prensa',     name:'Gemelos en prensa negra',         obs:'Parciales al fallo última serie',    rir:0, sets:[{kg:130,reps:10,type:''}]},
+    {id:'curl_fem_tumbado',   name:'Curl femoral tumbado',            obs:'',                                   rir:0, sets:[{kg:25,reps:10,type:''}]},
+    {id:'prensa_cuad',        name:'Prensa amarilla cuádriceps',      obs:'Aproximando',                        rir:1, sets:[{kg:120,reps:9,type:''}]},
   ]},
 ];
 
-// M8 data from Excel (the completed micro that serves as M0 baseline)
+// Baseline M0 (último micro del Excel)
 const M0_PREV = {
   press_banca:[{kg:85,reps:6,type:'topset'},{kg:70,reps:8,type:'backoff'}],
   triceps_katana:[{kg:7.5,reps:9,type:''},{kg:5,reps:'Fallo',type:'dropset'}],
-  press_incl_maq:[{kg:30,reps:8,type:''}],
-  pajaros_polea:[{kg:5,reps:10,type:''}],
+  press_incl_maq:[{kg:30,reps:8,type:''}], pajaros_polea:[{kg:5,reps:10,type:''}],
   ext_triceps:[{kg:17.5,reps:8,type:''}],
   lat_polea:[{kg:13.75,reps:8,type:''},{kg:7.5,reps:'Fallo',type:'dropset'}],
-  crunch_polea_e1:[{kg:35,reps:10,type:''}],
-  flex_ante_e1:[{kg:35,reps:10,type:''}],
-  ext_ante_e1:[{kg:35,reps:8,type:''}],
-  dragon_flag_e1:[{kg:null,reps:6,type:''}],
-  remo_libre:[{kg:70,reps:9,type:''}],
-  traccion_unilat:[{kg:25,reps:8,type:''}],
+  crunch_polea_e1:[{kg:35,reps:10,type:''}], flex_ante_e1:[{kg:35,reps:10,type:''}],
+  ext_ante_e1:[{kg:35,reps:8,type:''}],     dragon_flag_e1:[{kg:null,reps:6,type:''}],
+  remo_libre:[{kg:70,reps:9,type:''}],       traccion_unilat:[{kg:25,reps:8,type:''}],
   curl_bayesian:[{kg:13.75,reps:9,type:''}],
   remo_alto_maq:[{kg:55,reps:7,type:''},{kg:40,reps:'Fallo',type:'dropset'}],
-  predicador_manc:[{kg:12,reps:8,type:''}],
-  retracciones:[{kg:22,reps:11,type:''}],
+  predicador_manc:[{kg:12,reps:8,type:''}],  retracciones:[{kg:22,reps:11,type:''}],
   aduccion_maq_p1:[{kg:70,reps:11,type:''},{kg:40,reps:'Fallo',type:'dropset'}],
-  sentadilla_multi:[{kg:40,reps:10,type:''}],
-  gemelos_pie:[{kg:120,reps:12,type:''}],
+  sentadilla_multi:[{kg:40,reps:10,type:''}], gemelos_pie:[{kg:120,reps:12,type:''}],
   ext_rodilla_unilat:[{kg:27.5,reps:10,type:''},{kg:15,reps:'Fallo',type:'dropset'}],
   curl_fem_sentado:[{kg:40,reps:10,type:''},{kg:25,reps:'Fallo',type:'dropset'}],
   ext_lumbares:[{kg:10,reps:9,type:''}],
-  crunch_polea_p1:[{kg:35,reps:10,type:''}],
-  dragon_flag_p1:[{kg:null,reps:6,type:''}],
-  press_incl_manc:[{kg:28,reps:8,type:''}],
-  kaz_press:[{kg:40,reps:10,type:''}],
-  aperturas_polea:[{kg:17.5,reps:10,type:''}],
-  press_militar:[{kg:25,reps:10,type:''}],
+  crunch_polea_p1:[{kg:35,reps:10,type:''}], flex_ante_p1:[{kg:35,reps:10,type:''}],
+  ext_ante_p1:[{kg:35,reps:8,type:''}],      dragon_flag_p1:[{kg:null,reps:6,type:''}],
+  press_incl_manc:[{kg:28,reps:8,type:''}],  kaz_press:[{kg:40,reps:10,type:''}],
+  aperturas_polea:[{kg:17.5,reps:10,type:''}], press_militar:[{kg:25,reps:10,type:''}],
   patada_unilat:[{kg:10,reps:9,type:''},{kg:5,reps:'Fallo',type:'dropset'}],
   laterales_banco:[{kg:9,reps:8,type:''},{kg:6,reps:'Fallo',type:'dropset'}],
-  remo_prono:[{kg:65,reps:10,type:''}],
-  jalon_neutro:[{kg:65,reps:9,type:''}],
+  remo_prono:[{kg:65,reps:10,type:''}],      jalon_neutro:[{kg:65,reps:9,type:''}],
   dead_curl:[{kg:12,reps:10,type:''}],
   remo_dorian:[{kg:55,reps:9,type:''},{kg:40,reps:'Fallo',type:'dropset'}],
   curl_martillo:[{kg:14,reps:7,type:''},{kg:9,reps:'Fallo',type:'dropset'}],
-  crunch_polea_t2:[{kg:35,reps:10,type:''}],
-  dragon_flag_t2:[{kg:null,reps:6,type:''}],
+  crunch_polea_t2:[{kg:35,reps:10,type:''}], flex_ante_t2:[{kg:35,reps:10,type:''}],
+  ext_ante_t2:[{kg:35,reps:8,type:''}],      dragon_flag_t2:[{kg:null,reps:6,type:''}],
   peso_muerto_rum:[{kg:125,reps:6,type:''}],
   ext_rodilla_bilat:[{kg:50,reps:10,type:''}],
   aduccion_maq_p2:[{kg:70,reps:10,type:''},{kg:45,reps:'Fallo',type:'dropset'}],
-  gemelos_prensa:[{kg:130,reps:10,type:''}],
-  curl_fem_tumbado:[{kg:25,reps:10,type:''}],
+  gemelos_prensa:[{kg:130,reps:10,type:''}],  curl_fem_tumbado:[{kg:25,reps:10,type:''}],
   prensa_cuad:[{kg:120,reps:9,type:''}],
 };
 
-// Historical snapshots M1-M8 built from Excel histórico sheet
-// Each snapshot has the sessions with that micro's data
-function buildSnapshot(microIdx) {
-  // microIdx 0=M1 ... 7=M8
-  const h = HIST_DATA;
-  const get = (key, mi) => h[key] ? h[key][mi] : null;
-  const s = JSON.parse(JSON.stringify(SEED_SESSIONS));
-  // Map exercise IDs to hist keys
-  const MAP = {
-    press_banca: ['press_banca_top','press_banca_back'],
-    triceps_katana: ['triceps_katana','triceps_katana_drop'],
-    press_incl_maq: ['press_incl_maq'],
-    pajaros_polea: ['pajaros_polea'],
-    ext_triceps: ['ext_triceps'],
-    lat_polea: ['lat_polea_top','lat_polea_drop'],
-    crunch_polea_e1: ['crunch_polea_e1'],
-    flex_ante_e1: ['flex_ante_e1'],
-    ext_ante_e1: ['ext_ante_e1'],
-    dragon_flag_e1: ['dragon_flag_e1'],
-    remo_libre: ['remo_libre'],
-    traccion_unilat: ['traccion_unilat'],
-    curl_bayesian: ['curl_bayesian'],
-    remo_alto_maq: ['remo_alto_top','remo_alto_drop'],
-    predicador_manc: ['predicador_manc'],
-    retracciones: ['retracciones'],
-    aduccion_maq_p1: ['aduccion_p1_top','aduccion_p1_drop'],
-    sentadilla_multi: ['sentadilla_multi'],
-    gemelos_pie: ['gemelos_pie'],
-    ext_rodilla_unilat: ['ext_rodilla_unilat_top','ext_rodilla_unilat_drop'],
-    curl_fem_sentado: ['curl_fem_sent_top','curl_fem_sent_drop'],
-    ext_lumbares: ['ext_lumbares'],
-    crunch_polea_p1: ['crunch_polea_p1'],
-    dragon_flag_p1: ['dragon_flag_p1'],
-    press_incl_manc: ['press_incl_manc'],
-    kaz_press: ['kaz_press'],
-    aperturas_polea: ['aperturas_polea'],
-    press_militar: ['press_militar'],
-    patada_unilat: ['patada_top','patada_drop'],
-    laterales_banco: ['laterales_top','laterales_drop'],
-    remo_prono: ['remo_prono'],
-    jalon_neutro: ['jalon_neutro'],
-    dead_curl: ['dead_curl'],
-    remo_dorian: ['remo_dorian_top','remo_dorian_drop'],
-    curl_martillo: ['curl_martillo_top','curl_martillo_drop'],
-    crunch_polea_t2: ['crunch_polea_t2'],
-    dragon_flag_t2: ['dragon_flag_t2'],
-    peso_muerto_rum: ['peso_muerto_rum'],
-    ext_rodilla_bilat: ['ext_rodilla_bilat'],
-    aduccion_maq_p2: ['aduccion_p2_top','aduccion_p2_drop'],
-    gemelos_prensa: ['gemelos_prensa'],
-    curl_fem_tumbado: ['curl_fem_tumbado'],
-    prensa_cuad: ['prensa_cuad'],
-  };
-  s.forEach(sess => {
-    sess.exercises.forEach(ex => {
-      const keys = MAP[ex.id];
-      if (!keys) return;
-      ex.sets = keys.map((k, si) => {
-        const d = get(k, microIdx);
-        if (!d) return ex.sets[si] || {kg:null,reps:0,type:''};
-        const type = si===0&&keys.length>1&&k.includes('top')?'topset': si===0&&k.includes('back')?'backoff': k.includes('drop')?'dropset':'';
-        return {kg: d[0], reps: d[1], type};
-      }).filter(Boolean);
-    });
-  });
-  return {microNum: microIdx+1, sessions: s};
-}
+// ── DATOS HISTÓRICOS (definidos ANTES de buildSnapshot) ────────
+const HIST_WEIGHT = [];
+const HIST_CAL    = [];
+const HIST_SESS_PROG = {
+  empuje1:[], traccion1:[], pierna1:[],
+  empuje2:[], traccion2:[], pierna2:[],
+};
 
 const HIST_DATA = {
   press_banca_top:    [[80,7],[85,6],[85,7],[85,5],[85,6],[85,6],[85,7],[85,6]],
@@ -639,7 +546,7 @@ const HIST_DATA = {
   aduccion_p1_drop:   [[30,'Fallo'],[30,'Fallo'],[30,'Fallo'],[35,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo'],[40,'Fallo']],
   sentadilla_multi:   [[60,8],[60,9],[60,8],[60,10],[70,8],[70,8],[70,8],[40,10]],
   gemelos_pie:        [[80,10],[80,12],[80,15],[120,8],[120,10],[120,10],[120,11],[120,12]],
-  ext_rodilla_unilat_top:[[20,10],[20,10],[20,10],[27.5,8],[27.5,8],[27.5,9],[27.5,10],[27.5,10]],
+  ext_rodilla_unilat_top: [[20,10],[20,10],[20,10],[27.5,8],[27.5,8],[27.5,9],[27.5,10],[27.5,10]],
   ext_rodilla_unilat_drop:[[10,'Fallo'],[10,'Fallo'],[10,'Fallo'],[15,'Fallo'],[15,'Fallo'],[15,'Fallo'],[15,'Fallo'],[15,'Fallo']],
   curl_fem_sent_top:  [[20,10],[37.5,8],[37.5,10],[37.5,10],[40,10],[40,10],[40,10],[40,10]],
   curl_fem_sent_drop: [[10,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo'],[25,'Fallo']],
@@ -676,62 +583,94 @@ const HIST_DATA = {
   prensa_cuad:        [[null,null],[null,null],[null,null],[null,null],[120,8],[120,9],[120,9],[120,9]],
 };
 
-// Historical weight/cal per micro M1-M8
-const HIST_WEIGHT = [];
-const HIST_CAL    = [];
+// ── buildSnapshot DESPUÉS de HIST_DATA ────────────────────────
+function buildSnapshot(microIdx) {
+  const MAP = {
+    press_banca:['press_banca_top','press_banca_back'],
+    triceps_katana:['triceps_katana','triceps_katana_drop'],
+    press_incl_maq:['press_incl_maq'], pajaros_polea:['pajaros_polea'],
+    ext_triceps:['ext_triceps'], lat_polea:['lat_polea_top','lat_polea_drop'],
+    crunch_polea_e1:['crunch_polea_e1'], flex_ante_e1:['flex_ante_e1'],
+    ext_ante_e1:['ext_ante_e1'], dragon_flag_e1:['dragon_flag_e1'],
+    remo_libre:['remo_libre'], traccion_unilat:['traccion_unilat'],
+    curl_bayesian:['curl_bayesian'], remo_alto_maq:['remo_alto_top','remo_alto_drop'],
+    predicador_manc:['predicador_manc'], retracciones:['retracciones'],
+    aduccion_maq_p1:['aduccion_p1_top','aduccion_p1_drop'],
+    sentadilla_multi:['sentadilla_multi'], gemelos_pie:['gemelos_pie'],
+    ext_rodilla_unilat:['ext_rodilla_unilat_top','ext_rodilla_unilat_drop'],
+    curl_fem_sentado:['curl_fem_sent_top','curl_fem_sent_drop'],
+    ext_lumbares:['ext_lumbares'],
+    crunch_polea_p1:['crunch_polea_p1'], flex_ante_p1:['flex_ante_p1'],
+    ext_ante_p1:['ext_ante_p1'], dragon_flag_p1:['dragon_flag_p1'],
+    press_incl_manc:['press_incl_manc'], kaz_press:['kaz_press'],
+    aperturas_polea:['aperturas_polea'], press_militar:['press_militar'],
+    patada_unilat:['patada_top','patada_drop'],
+    laterales_banco:['laterales_top','laterales_drop'],
+    remo_prono:['remo_prono'], jalon_neutro:['jalon_neutro'], dead_curl:['dead_curl'],
+    remo_dorian:['remo_dorian_top','remo_dorian_drop'],
+    curl_martillo:['curl_martillo_top','curl_martillo_drop'],
+    crunch_polea_t2:['crunch_polea_t2'], flex_ante_t2:['flex_ante_t2'],
+    ext_ante_t2:['ext_ante_t2'], dragon_flag_t2:['dragon_flag_t2'],
+    peso_muerto_rum:['peso_muerto_rum'], ext_rodilla_bilat:['ext_rodilla_bilat'],
+    aduccion_maq_p2:['aduccion_p2_top','aduccion_p2_drop'],
+    gemelos_prensa:['gemelos_prensa'], curl_fem_tumbado:['curl_fem_tumbado'],
+    prensa_cuad:['prensa_cuad'],
+  };
+  const s = JSON.parse(JSON.stringify(SEED_SESSIONS));
+  s.forEach(sess => {
+    sess.exercises.forEach(ex => {
+      const keys = MAP[ex.id];
+      if (!keys) return;
+      const newSets = keys.map((k, si) => {
+        const d = HIST_DATA[k] ? HIST_DATA[k][microIdx] : null;
+        if (!d || d[0] === null && d[1] === null) return null;
+        const type = k.includes('top') ? 'topset' : k.includes('back') ? 'backoff' : k.includes('drop') ? 'dropset' : '';
+        return {kg: d[0], reps: d[1], type};
+      }).filter(Boolean);
+      if (newSets.length) ex.sets = newSets;
+    });
+  });
+  return {microNum: microIdx + 1, sessions: s};
+}
 
-// Session net progress M1→M2 ... M7→M8 (7 deltas) computed from historical changes
-const HIST_SESS_PROG = {
-  empuje1:[], traccion1:[],
-  pierna1:[],  empuje2:[],
-  traccion2:[],pierna2:[],
-};
-
-const SESS_META = {
-  empuje1:{name:'Empuje 1',color:'#c8f060'}, traccion1:{name:'Tracción 1',color:'#60d0f0'},
-  pierna1:{name:'Pierna 1',color:'#f0b040'},  empuje2:{name:'Empuje 2',color:'#b8e050'},
-  traccion2:{name:'Tracción 2',color:'#50c0e0'},pierna2:{name:'Pierna 2',color:'#e0a030'},
-};
-const SCHEDULE = ['empuje1','traccion1','rest','pierna1','empuje2','rest','traccion2','pierna2','rest'];
-const SSHORT   = ['E1','T1','—','P1','E2','—','T2','P2','—'];
-const SCOLORS  = ['push','pull','rd','legs','push','rd','pull','legs','rd'];
-
-// ── PERSISTENCE ────────────────────────────────────────────────
-function ls(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch{return d;}}
-function lsw(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
-
-// Build pre-loaded snapshots from historical data (M1-M8)
-function buildInitialSnapshots(){
-  const snaps=[];
-  for(let i=0;i<8;i++) snaps.push(buildSnapshot(i));
+function buildInitialSnapshots() {
+  const snaps = [];
+  for (let i = 0; i < 8; i++) snaps.push(buildSnapshot(i));
   return snaps;
 }
+
+// ── PERSISTENCIA ───────────────────────────────────────────────
+function ls(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}}
+function lsw(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 
 let APP = ls('b26v2', {
   microNum: 1,
   calObj: 3200,
-  wHist: [],         // completed micro weight averages — starts empty
-  cHist: [],         // completed micro cal averages — starts empty
+  wHist: [],
+  cHist: [],
   sessProg: {empuje1:[],traccion1:[],pierna1:[],empuje2:[],traccion2:[],pierna2:[]},
-  goals: {w:null,c:null},
+  goals: {w:null, c:null},
   sessions: null,
-  prevMicro: M0_PREV,  // M8 real data as comparison baseline for M1
+  prevMicro: M0_PREV,
   log: {},
   dayCount: 0,
-  snapshots: buildInitialSnapshots(), // M1-M8 pre-loaded from Excel
+  snapshots: buildInitialSnapshots(),
 });
 
-let sessions = APP.sessions ? JSON.parse(JSON.stringify(APP.sessions)) : JSON.parse(JSON.stringify(SEED_SESSIONS));
-function save(){APP.sessions=sessions;lsw('b26v2',APP);}
+let sessions = APP.sessions
+  ? JSON.parse(JSON.stringify(APP.sessions))
+  : JSON.parse(JSON.stringify(SEED_SESSIONS));
+
+function save(){APP.sessions = sessions; lsw('b26v2', APP);}
 
 // ── UTILS ──────────────────────────────────────────────────────
-const toN=v=>parseFloat(v)||0;
-function cmpSet(a,b){
-  if(!a||!b) return 'same';
-  const ar=a.reps==='Fallo'?9999:toN(a.reps),br=b.reps==='Fallo'?9999:toN(b.reps);
-  const ak=toN(a.kg),bk=toN(b.kg);
-  if(ak>bk) return 'up'; if(ak<bk) return 'down';
-  if(ar>br) return 'up'; if(ar<br) return 'down';
+const toN = v => parseFloat(v) || 0;
+function cmpSet(a, b) {
+  if (!a || !b) return 'same';
+  const ar = a.reps==='Fallo'?9999:toN(a.reps), br = b.reps==='Fallo'?9999:toN(b.reps);
+  const ak = toN(a.kg), bk = toN(b.kg);
+  if (ak > bk) return 'up'; if (ak < bk) return 'down';
+  if (ar > br) return 'up'; if (ar < br) return 'down';
   return 'same';
 }
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
@@ -743,98 +682,104 @@ function showPage(p){
   document.querySelectorAll('.nav-tab').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.bbot').forEach(e=>e.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  const idx=['micro','hist','dash','edit'].indexOf(p);
-  document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  document.querySelectorAll('.nav-tab')[['micro','hist','dash','edit'].indexOf(p)].classList.add('active');
   document.getElementById('btn-'+p).classList.add('active');
-  if(p==='hist') renderHist();
-  if(p==='dash') renderDash();
+  if (p==='hist') renderHist();
+  if (p==='dash') renderDash();
 }
 
-// ── CALENDAR ───────────────────────────────────────────────────
+// ── CALENDARIO ─────────────────────────────────────────────────
 function renderCal(){
-  const el=document.getElementById('cal-week');el.innerHTML='';
-  let sessionCounter=0;
-  const sessionsDone=Object.keys(APP.log).length;
-  SCHEDULE.forEach((sid,i)=>{
-    const isRest=sid==='rest';
-    if(!isRest) sessionCounter++;
-    const isDone=!isRest&&sessionCounter<=sessionsDone;
-    const isCurrent=!isRest&&sessionCounter===sessionsDone+1;
-    const d=document.createElement('div');
-    d.className='cal-day'+(isCurrent?' current':'')+(isDone?' done':'')
-      +(!isRest&&!isCurrent?' training':'')+(isRest&&!isCurrent?' rest-day':'');
-    d.innerHTML=`<span class="dlabel">${SSHORT[i]}</span>${!isCurrent?`<div class="cdot ${SCOLORS[i]}"></div>`:''}`;
-    if(!isRest) d.onclick=()=>{const el2=document.getElementById('sess-'+sid);if(el2){el2.scrollIntoView({behavior:'smooth'});el2.classList.add('open');}};
+  const el = document.getElementById('cal-week'); el.innerHTML = '';
+  let sc = 0;
+  const done = Object.keys(APP.log).length;
+  SCHEDULE.forEach((sid, i) => {
+    const isRest = sid === 'rest';
+    if (!isRest) sc++;
+    const isDone = !isRest && sc <= done;
+    const isCurrent = !isRest && sc === done + 1;
+    const d = document.createElement('div');
+    d.className = 'cal-day' + (isCurrent?' current':'') + (isDone?' done':'')
+      + (!isRest&&!isCurrent?' training':'') + (isRest&&!isCurrent?' rest-day':'');
+    d.innerHTML = `<span class="dlabel">${SSHORT[i]}</span>${!isCurrent?`<div class="cdot ${SCOLORS[i]}"></div>`:''}`;
+    if (!isRest) d.onclick = () => {
+      const el2 = document.getElementById('sess-'+sid);
+      if (el2) {el2.scrollIntoView({behavior:'smooth'}); el2.classList.add('open');}
+    };
     el.appendChild(d);
   });
 }
 
 // ── STATS BAR ──────────────────────────────────────────────────
 function renderStats(){
-  const bar=document.getElementById('stats-bar');
-  let ups=0,downs=0;
-  sessions.forEach(s=>s.exercises.forEach(ex=>{
-    const prev=APP.prevMicro?APP.prevMicro[ex.id]||[]:[];
-    ex.sets.forEach((set,i)=>{const r=cmpSet(set,prev[i]);if(r==='up')ups++;if(r==='down')downs++;});
+  const bar = document.getElementById('stats-bar');
+  let ups=0, downs=0;
+  sessions.forEach(s => s.exercises.forEach(ex => {
+    const prev = APP.prevMicro ? APP.prevMicro[ex.id]||[] : [];
+    ex.sets.forEach((set,i) => {const r=cmpSet(set,prev[i]); if(r==='up')ups++; if(r==='down')downs++;});
   }));
-  const logArr=Object.values(APP.log);
-  const ws=logArr.map(l=>l.w).filter(Boolean);
-  const cs=logArr.map(l=>l.c).filter(Boolean);
-  const avgW=ws.length?(ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(1):'—';
-  const avgC=cs.length?Math.round(cs.reduce((a,b)=>a+b,0)/cs.length):'—';
-  bar.innerHTML=`
+  const logArr = Object.values(APP.log);
+  const ws = logArr.map(l=>l.w).filter(Boolean);
+  const cs = logArr.map(l=>l.c).filter(Boolean);
+  const avgW = ws.length ? (ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(1) : '—';
+  const avgC = cs.length ? Math.round(cs.reduce((a,b)=>a+b,0)/cs.length) : '—';
+  bar.innerHTML = `
     <div class="stat-card"><div class="slabel">Micro</div><div class="svalue">#${APP.microNum}</div><div class="ssub">en curso</div></div>
-    <div class="stat-card"><div class="slabel">↑ Mejoras</div><div class="svalue" style="color:var(--up)">${ups}</div><div class="ssub">vs M0</div></div>
-    <div class="stat-card"><div class="slabel">↓ Bajas</div><div class="svalue" style="color:var(--down)">${downs}</div><div class="ssub">vs M0</div></div>
+    <div class="stat-card"><div class="slabel">&#8593; Mejoras</div><div class="svalue" style="color:var(--up)">${ups}</div><div class="ssub">vs M0</div></div>
+    <div class="stat-card"><div class="slabel">&#8595; Bajas</div><div class="svalue" style="color:var(--down)">${downs}</div><div class="ssub">vs M0</div></div>
     <div class="stat-card"><div class="slabel">Peso med.</div><div class="svalue">${avgW}</div><div class="ssub">kg · ${ws.length} días</div></div>
     <div class="stat-card"><div class="slabel">Cal med.</div><div class="svalue" style="font-size:18px">${avgC}</div><div class="ssub">kcal · ${cs.length} días</div></div>`;
 }
 
-// ── SESSIONS ───────────────────────────────────────────────────
+// ── SESIONES ───────────────────────────────────────────────────
 function renderSessions(){
-  const cont=document.getElementById('sessions-container');cont.innerHTML='';
-  ['empuje1','traccion1','rest1','pierna1','empuje2','rest2','traccion2','pierna2'].forEach(sid=>{
-    if(sid==='rest1'||sid==='rest2'){
-      const r=document.createElement('div');r.className='rest-block';
-      r.innerHTML='<div class="rest-ico">💤</div><div class="rest-lbl">Día de descanso</div>';
-      cont.appendChild(r);return;
+  const cont = document.getElementById('sessions-container'); cont.innerHTML = '';
+  ['empuje1','traccion1','rest1','pierna1','empuje2','rest2','traccion2','pierna2'].forEach(sid => {
+    if (sid==='rest1'||sid==='rest2') {
+      const r = document.createElement('div'); r.className = 'rest-block';
+      r.innerHTML = '<div class="rest-ico">&#128164;</div><div class="rest-lbl">Día de descanso</div>';
+      cont.appendChild(r); return;
     }
-    const sess=sessions.find(s=>s.id===sid);if(!sess)return;
-    const exRows=sess.exercises.map((ex,ei)=>{
-      const prev=APP.prevMicro?APP.prevMicro[ex.id]||[]:[];
-      const pills=ex.sets.map((set,si)=>{
-        const c=cmpSet(set,prev[si]);
-        const kstr=set.kg!=null?set.kg+' kg':'BW';
-        const tstr=set.type?`<span class="tp">${set.type}</span>`:'';
+    const sess = sessions.find(s => s.id===sid); if (!sess) return;
+    const exRows = sess.exercises.map((ex, ei) => {
+      const prev = APP.prevMicro ? APP.prevMicro[ex.id]||[] : [];
+      const pills = ex.sets.map((set, si) => {
+        const c = cmpSet(set, prev[si]);
+        const kstr = set.kg!=null ? set.kg+' kg' : 'BW';
+        const tstr = set.type ? `<span class="tp">${set.type}</span>` : '';
         return `<div class="set-pill ${c}" onclick="openEdit('${sid}',${ei})"><span class="kg">${kstr}</span><span class="rp">× ${set.reps}</span>${tstr}</div>`;
       }).join('');
-      return `<div class="exercise"><div class="ex-name">${ex.name}</div>${ex.obs?`<div class="ex-obs">${ex.obs}</div>`:''}
-        <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})">✏️</button></div>
-        <div class="ex-rir">RIR ${ex.rir} · ${ex.sets.length} series</div></div>`;
+      return `<div class="exercise">
+        <div class="ex-name">${ex.name}</div>
+        ${ex.obs?`<div class="ex-obs">${ex.obs}</div>`:''}
+        <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})">&#9999;&#65039;</button></div>
+        <div class="ex-rir">RIR ${ex.rir} · ${ex.sets.length} series</div>
+      </div>`;
     }).join('');
-    const d=document.createElement('div');d.className='session';d.id='sess-'+sid;
-    d.innerHTML=`<div class="session-hdr" onclick="this.parentElement.classList.toggle('open')">
+    const d = document.createElement('div'); d.className = 'session'; d.id = 'sess-'+sid;
+    d.innerHTML = `<div class="session-hdr" onclick="this.parentElement.classList.toggle('open')">
       <div><div class="sname">${sess.name}</div><div class="stag">${sess.tag}</div></div>
-      <div class="schev">▾</div></div><div class="session-body">${exRows}</div>`;
+      <div class="schev">&#9662;</div></div>
+      <div class="session-body">${exRows}</div>`;
     cont.appendChild(d);
   });
-  const r=document.createElement('div');r.className='rest-block';
-  r.innerHTML='<div class="rest-ico">💤</div><div class="rest-lbl">Descanso · fin de microciclo</div>';
+  const r = document.createElement('div'); r.className = 'rest-block';
+  r.innerHTML = '<div class="rest-ico">&#128164;</div><div class="rest-lbl">Descanso · fin de microciclo</div>';
   cont.appendChild(r);
 }
 
-// ── EDIT EXERCISE ───────────────────────────────────────────────
-let EC=null;
-function openEdit(sid,ei){
-  const sess=sessions.find(s=>s.id===sid);const ex=sess.exercises[ei];
-  EC={sid,ei,sets:ex.sets.map(s=>({...s}))};
-  document.getElementById('m-exname').textContent=ex.name;
-  document.getElementById('m-exobs').textContent=ex.obs||'';
+// ── EDITAR EJERCICIO ────────────────────────────────────────────
+let EC = null;
+function openEdit(sid, ei){
+  const sess = sessions.find(s=>s.id===sid); const ex = sess.exercises[ei];
+  EC = {sid, ei, sets: ex.sets.map(s=>({...s}))};
+  document.getElementById('m-exname').textContent = ex.name;
+  document.getElementById('m-exobs').textContent = ex.obs||'';
   renderMSets();
   document.getElementById('edit-modal').classList.add('open');
 }
 function renderMSets(){
-  document.getElementById('m-sets').innerHTML=EC.sets.map((s,i)=>`
+  document.getElementById('m-sets').innerHTML = EC.sets.map((s,i) => `
     <div class="mrow" style="align-items:flex-end">
       <div class="mfield"><label>Kg</label><input type="number" step="0.25" value="${s.kg!=null?s.kg:''}" oninput="EC.sets[${i}].kg=parseFloat(this.value)||null" placeholder="—"/></div>
       <div class="mfield"><label>Reps</label><input type="text" value="${s.reps}" oninput="EC.sets[${i}].reps=isNaN(parseInt(this.value))?this.value:parseInt(this.value)" placeholder="10 / Fallo"/></div>
@@ -845,69 +790,73 @@ function renderMSets(){
           <option value="backoff" ${s.type==='backoff'?'selected':''}>Backoff</option>
           <option value="dropset" ${s.type==='dropset'?'selected':''}>Dropset</option>
         </select></div>
-      <button class="btn btn-danger" style="max-width:42px;padding:10px 8px;flex:none" onclick="rmSet(${i})">✕</button>
+      <button class="btn btn-danger" style="max-width:42px;padding:10px 8px;flex:none" onclick="rmSet(${i})">&#10005;</button>
     </div>`).join('');
 }
-function addSet(){EC.sets.push({kg:null,reps:10,type:''});renderMSets();}
-function rmSet(i){EC.sets.splice(i,1);renderMSets();}
+function addSet(){EC.sets.push({kg:null,reps:10,type:''}); renderMSets();}
+function rmSet(i){EC.sets.splice(i,1); renderMSets();}
 function saveExercise(){
-  const sess=sessions.find(s=>s.id===EC.sid);
-  sess.exercises[EC.ei].sets=EC.sets.map(s=>({...s}));
-  save();closeOverlay('edit-modal');renderSessions();renderStats();showToast('✓ Guardado');
+  const sess = sessions.find(s=>s.id===EC.sid);
+  sess.exercises[EC.ei].sets = EC.sets.map(s=>({...s}));
+  save(); closeOverlay('edit-modal'); renderSessions(); renderStats(); showToast('Guardado ✓');
 }
 
-// ── DAILY LOG ──────────────────────────────────────────────────
+// ── LOG DIARIO ─────────────────────────────────────────────────
 function logMetrics(){
-  const w=parseFloat(document.getElementById('bw-input').value);
-  const c=parseInt(document.getElementById('cal-input').value);
-  if(!w&&!c){showToast('Introduce peso o calorías');return;}
-  APP.dayCount++;APP.log['D'+APP.dayCount]={w:w||null,c:c||null};
-  save();document.getElementById('bw-input').value='';document.getElementById('cal-input').value='';
-  renderLogList();renderStats();renderCal();showToast('Día '+APP.dayCount+' registrado ✓');
+  const w = parseFloat(document.getElementById('bw-input').value);
+  const c = parseInt(document.getElementById('cal-input').value);
+  if (!w && !c){showToast('Introduce peso o calorías'); return;}
+  APP.dayCount++; APP.log['D'+APP.dayCount] = {w:w||null, c:c||null};
+  save();
+  document.getElementById('bw-input').value=''; document.getElementById('cal-input').value='';
+  renderLogList(); renderStats(); renderCal();
+  showToast('Día '+APP.dayCount+' registrado ✓');
 }
 function renderLogList(){
-  const el=document.getElementById('log-list');
-  const entries=Object.entries(APP.log).sort(([a],[b])=>parseInt(a.slice(1))-parseInt(b.slice(1)));
-  if(!entries.length){el.style.display='none';return;}
-  el.style.display='block';
-  el.innerHTML=`<div style="padding:9px 16px 5px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600">Entradas este micro</div>`
-    +entries.map(([k,v])=>`<div class="log-entry"><span class="log-day">${k}</span>
-      <span class="log-vals">${v.w?`<span class="log-w">⚖ ${v.w} kg</span>`:''} ${v.c?`<span class="log-c">🔥 ${v.c} kcal</span>`:''}</span>
-      <button class="log-del" onclick="delLog('${k}')">✕</button></div>`).join('');
+  const el = document.getElementById('log-list');
+  const entries = Object.entries(APP.log).sort(([a],[b])=>parseInt(a.slice(1))-parseInt(b.slice(1)));
+  if (!entries.length){el.style.display='none'; return;}
+  el.style.display = 'block';
+  el.innerHTML = `<div style="padding:9px 16px 5px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600">Entradas este micro</div>`
+    + entries.map(([k,v]) => `<div class="log-entry">
+      <span class="log-day">${k}</span>
+      <span class="log-vals">${v.w?`<span class="log-w">&#9878; ${v.w} kg</span>`:''} ${v.c?`<span class="log-c">&#128293; ${v.c} kcal</span>`:''}</span>
+      <button class="log-del" onclick="delLog('${k}')">&#10005;</button>
+    </div>`).join('');
 }
 function delLog(k){
   delete APP.log[k];
-  const sorted=Object.entries(APP.log).sort(([a],[b])=>parseInt(a.slice(1))-parseInt(b.slice(1)));
-  APP.log={};sorted.forEach(([,v],i)=>{APP.log['D'+(i+1)]=v;});
-  APP.dayCount=sorted.length;
-  save();renderLogList();renderStats();renderCal();showToast('Entrada eliminada');
+  const sorted = Object.entries(APP.log).sort(([a],[b])=>parseInt(a.slice(1))-parseInt(b.slice(1)));
+  APP.log = {}; sorted.forEach(([,v],i)=>{APP.log['D'+(i+1)]=v;});
+  APP.dayCount = sorted.length;
+  save(); renderLogList(); renderStats(); renderCal(); showToast('Entrada eliminada');
 }
 
-// ── CLOSE MICRO ────────────────────────────────────────────────
+// ── CERRAR MICRO ───────────────────────────────────────────────
 function calcBalance(){
-  const res={};
-  sessions.forEach(s=>{
-    let u=0,d=0;
-    s.exercises.forEach(ex=>{
-      const prev=APP.prevMicro?APP.prevMicro[ex.id]||[]:[];
-      const cm=ex.sets.find(st=>st.type!=='dropset')||ex.sets[0];
-      const pm=prev.find?prev.find(p=>p&&p.type!=='dropset')||prev[0]:prev[0];
-      if(cm&&pm){const r=cmpSet(cm,pm);if(r==='up')u++;if(r==='down')d++;}
+  const res = {};
+  sessions.forEach(s => {
+    let u=0, d=0;
+    s.exercises.forEach(ex => {
+      const prev = APP.prevMicro ? APP.prevMicro[ex.id]||[] : [];
+      const cm = ex.sets.find(st=>st.type!=='dropset')||ex.sets[0];
+      const pm = prev.find ? prev.find(p=>p&&p.type!=='dropset')||prev[0] : prev[0];
+      if (cm && pm){const r=cmpSet(cm,pm); if(r==='up')u++; if(r==='down')d++;}
     });
-    res[s.id]=u-d;
+    res[s.id] = u - d;
   });
   return res;
 }
 function openCloseMicro(){
-  const entries=Object.values(APP.log);
-  const ws=entries.map(l=>l.w).filter(Boolean);
-  const cs=entries.map(l=>l.c).filter(Boolean);
-  const avgW=ws.length?(ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(2):null;
-  const avgC=cs.length?Math.round(cs.reduce((a,b)=>a+b,0)/cs.length):null;
-  const bal=calcBalance();const net=Object.values(bal).reduce((a,b)=>a+b,0);
-  document.getElementById('co-title').textContent=`Cerrar Microciclo ${APP.microNum}`;
-  document.getElementById('co-cal').value=APP.calObj;
-  document.getElementById('co-summary').innerHTML=`
+  const entries = Object.values(APP.log);
+  const ws = entries.map(l=>l.w).filter(Boolean);
+  const cs = entries.map(l=>l.c).filter(Boolean);
+  const avgW = ws.length ? (ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(2) : null;
+  const avgC = cs.length ? Math.round(cs.reduce((a,b)=>a+b,0)/cs.length) : null;
+  const bal = calcBalance(); const net = Object.values(bal).reduce((a,b)=>a+b,0);
+  document.getElementById('co-title').textContent = `Cerrar Microciclo ${APP.microNum}`;
+  document.getElementById('co-cal').value = APP.calObj;
+  document.getElementById('co-summary').innerHTML = `
     <div class="summary-row"><span>Días registrados</span><span class="val">${entries.length}</span></div>
     <div class="summary-row"><span>Peso medio</span><span class="val">${avgW?avgW+' kg':'Sin datos'}</span></div>
     <div class="summary-row"><span>Calorías medias</span><span class="val">${avgC?avgC+' kcal':'Sin datos'}</span></div>
@@ -915,93 +864,90 @@ function openCloseMicro(){
   document.getElementById('close-overlay').classList.add('open');
 }
 function confirmClose(){
-  const entries=Object.values(APP.log);
-  const ws=entries.map(l=>l.w).filter(Boolean);
-  const cs=entries.map(l=>l.c).filter(Boolean);
-  const avgW=ws.length?parseFloat((ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(2)):null;
-  const avgC=cs.length?Math.round(cs.reduce((a,b)=>a+b,0)/cs.length):null;
-  const newCal=parseInt(document.getElementById('co-cal').value)||APP.calObj;
-  const bal=calcBalance();
-  APP.snapshots.push({microNum:APP.microNum,sessions:JSON.parse(JSON.stringify(sessions))});
-  APP.wHist.push(avgW);APP.cHist.push(avgC);
-  Object.keys(APP.sessProg).forEach(id=>APP.sessProg[id].push(bal[id]||0));
-  const np={};sessions.forEach(s=>s.exercises.forEach(ex=>{np[ex.id]=ex.sets.map(s=>({...s}));}));
-  APP.prevMicro=np;APP.microNum+=1;APP.calObj=newCal;APP.sessions=null;APP.log={};APP.dayCount=0;
-  sessions=JSON.parse(JSON.stringify(SEED_SESSIONS));save();
+  const entries = Object.values(APP.log);
+  const ws = entries.map(l=>l.w).filter(Boolean);
+  const cs = entries.map(l=>l.c).filter(Boolean);
+  const avgW = ws.length ? parseFloat((ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(2)) : null;
+  const avgC = cs.length ? Math.round(cs.reduce((a,b)=>a+b,0)/cs.length) : null;
+  const newCal = parseInt(document.getElementById('co-cal').value)||APP.calObj;
+  const bal = calcBalance();
+  APP.snapshots.push({microNum:APP.microNum, sessions:JSON.parse(JSON.stringify(sessions))});
+  APP.wHist.push(avgW); APP.cHist.push(avgC);
+  Object.keys(APP.sessProg).forEach(id => APP.sessProg[id].push(bal[id]||0));
+  const np = {}; sessions.forEach(s=>s.exercises.forEach(ex=>{np[ex.id]=ex.sets.map(s=>({...s}));}));
+  APP.prevMicro = np; APP.microNum++; APP.calObj = newCal;
+  APP.sessions = null; APP.log = {}; APP.dayCount = 0;
+  sessions = JSON.parse(JSON.stringify(SEED_SESSIONS)); save();
   closeOverlay('close-overlay');
-  document.getElementById('so-title').textContent=`Microciclo ${APP.microNum}`;
-  document.getElementById('so-cal').value=newCal;
-  document.getElementById('so-sub').textContent=`M${APP.microNum-1} archivado ✓ A por el siguiente.`;
+  document.getElementById('so-title').textContent = `Microciclo ${APP.microNum}`;
+  document.getElementById('so-cal').value = newCal;
+  document.getElementById('so-sub').textContent = `M${APP.microNum-1} archivado ✓`;
   document.getElementById('start-overlay').classList.add('open');
 }
 function startMicro(){
-  const c=parseInt(document.getElementById('so-cal').value);if(c)APP.calObj=c;
-  save();closeOverlay('start-overlay');initMicroPage();showToast(`Microciclo ${APP.microNum} iniciado ✓`);
+  const c = parseInt(document.getElementById('so-cal').value); if (c) APP.calObj = c;
+  save(); closeOverlay('start-overlay'); initMicroPage(); showToast(`Microciclo ${APP.microNum} iniciado ✓`);
 }
 
-// ── HISTORICO ──────────────────────────────────────────────────
-const SESS_FILTERS=['Todos','Empuje 1','Tracción 1','Pierna 1','Empuje 2','Tracción 2','Pierna 2'];
+// ── HISTÓRICO ──────────────────────────────────────────────────
 let hFilter='Todos', hViewMicro=null;
-
 function renderHist(){
-  if(hViewMicro===null) hViewMicro=APP.microNum;
-  const completed=APP.microNum-1+8; // 8 historical + new completed
-  document.getElementById('hist-sub').textContent=`${APP.microNum-1} micros nuevos + 8 históricos`;
-  const isCurrent=hViewMicro===APP.microNum;
-  // Total available: M1-M8 historical + current new micros
-  const totalMicros=APP.microNum; // M1 = first new micro
-  document.getElementById('tt-prev').disabled=hViewMicro<=1;
-  document.getElementById('tt-next').disabled=isCurrent;
-  document.getElementById('tt-label').textContent=isCurrent?`M${APP.microNum} ↗ actual`:hViewMicro<=8?`M${hViewMicro} (histórico)`:`Microciclo ${hViewMicro}`;
-  document.getElementById('tt-sub').textContent=isCurrent?'Microciclo en curso':hViewMicro<=8?`Importado del Excel · micro ${hViewMicro} de 8 históricos`:`Micro ${hViewMicro} completado`;
-
-  document.getElementById('hist-filters').innerHTML=SESS_FILTERS.map(f=>
+  if (hViewMicro===null) hViewMicro = APP.microNum;
+  const completed = APP.microNum - 1;
+  document.getElementById('hist-sub').textContent = `${completed} micros nuevos + 8 históricos`;
+  const isCurrent = hViewMicro === APP.microNum;
+  document.getElementById('tt-prev').disabled = hViewMicro <= 1;
+  document.getElementById('tt-next').disabled = isCurrent;
+  document.getElementById('tt-label').textContent = isCurrent ? `M${APP.microNum} actual` : hViewMicro<=8 ? `M${hViewMicro} (histórico)` : `Microciclo ${hViewMicro}`;
+  document.getElementById('tt-sub').textContent = isCurrent ? 'Microciclo en curso' : hViewMicro<=8 ? `Importado del Excel` : `Micro ${hViewMicro} completado`;
+  document.getElementById('hist-filters').innerHTML = SESS_FILTERS.map(f =>
     `<button class="filt-btn ${hFilter===f?'active':''}" onclick="setHF('${f}')">${f}</button>`).join('');
-
-  const cont=document.getElementById('hist-container');cont.innerHTML='';
-  let viewSessions,viewPrev,viewMn,isCurrentView;
-  if(isCurrent){
-    viewSessions=sessions;viewPrev=APP.prevMicro;viewMn=APP.microNum;isCurrentView=true;
+  const cont = document.getElementById('hist-container'); cont.innerHTML = '';
+  let viewSessions, viewPrev, viewMn, isCurrentView;
+  if (isCurrent){
+    viewSessions=sessions; viewPrev=APP.prevMicro; viewMn=APP.microNum; isCurrentView=true;
   } else {
-    const snap=APP.snapshots.find(s=>s.microNum===hViewMicro);
-    const prevSnap=APP.snapshots.find(s=>s.microNum===hViewMicro-1);
-    if(!snap){
+    const snap = APP.snapshots.find(s=>s.microNum===hViewMicro);
+    const prevSnap = APP.snapshots.find(s=>s.microNum===hViewMicro-1);
+    if (!snap){
       cont.innerHTML=`<div style="padding:24px 16px;color:var(--text3);font-size:13px;">No hay datos para M${hViewMicro}.</div>`;return;
     }
-    viewSessions=snap.sessions;
-    viewPrev=prevSnap?buildPrevMap(prevSnap.sessions):null;
-    viewMn=hViewMicro;isCurrentView=false;
+    viewSessions=snap.sessions; viewPrev=prevSnap?buildPrevMap(prevSnap.sessions):null;
+    viewMn=hViewMicro; isCurrentView=false;
   }
-  const shown=hFilter==='Todos'?viewSessions:viewSessions.filter(s=>s.name===hFilter);
-  shown.forEach(sess=>{
-    const lbl=document.createElement('div');lbl.className='sec-label';
-    lbl.textContent=sess.name+' · '+sess.tag;cont.appendChild(lbl);
-    sess.exercises.forEach(ex=>{
-      const prev=viewPrev?viewPrev[ex.id]||[]:[];
-      let tc='flat',ti='→';
-      if(ex.sets.length&&prev.length){const r=cmpSet(ex.sets[0],prev[0]);if(r==='up'){tc='up';ti='↑';}if(r==='down'){tc='down';ti='↓';}}
-      const hasPrev=prev.length>0;
-      const prevRow=hasPrev?prev.map(s=>{const k=s.kg!=null?s.kg+'kg':'BW';return `<span class="mpill">M${viewMn-1}: ${k}×${s.reps}</span>`;}).join('')
-        :`<span style="font-size:11px;color:var(--text3)">Primer registro</span>`;
-      const currRow=ex.sets.map((s,i)=>{const c=hasPrev?cmpSet(s,prev[i]):'';const k=s.kg!=null?s.kg+'kg':'BW';return `<span class="mpill ${c}">M${viewMn}: ${k}×${s.reps}${s.type?' '+s.type:''}</span>`;}).join('');
-      const div=document.createElement('div');div.className='hist-ex';
-      div.innerHTML=`<div class="hist-ex-hdr"><span class="hex-name">${ex.name}</span><span class="htrend ${hasPrev?tc:'flat'}">${hasPrev?ti+' M'+(viewMn-1)+'→M'+viewMn:'M'+viewMn}</span></div>
-        <table class="hist-table">
-          <tr><td class="mnum">M${viewMn-1}</td><td><div class="sets-row">${prevRow}</div></td></tr>
-          <tr><td class="mnum">M${viewMn}${isCurrentView?'↗':''}</td><td><div class="sets-row">${currRow}</div></td></tr>
-        </table>`;
+  const shown = hFilter==='Todos' ? viewSessions : viewSessions.filter(s=>s.name===hFilter);
+  shown.forEach(sess => {
+    const lbl = document.createElement('div'); lbl.className='sec-label';
+    lbl.textContent = sess.name+' · '+sess.tag; cont.appendChild(lbl);
+    sess.exercises.forEach(ex => {
+      const prev = viewPrev ? viewPrev[ex.id]||[] : [];
+      let tc='flat', ti='→';
+      if (ex.sets.length&&prev.length){const r=cmpSet(ex.sets[0],prev[0]); if(r==='up'){tc='up';ti='↑';} if(r==='down'){tc='down';ti='↓';}}
+      const hasPrev = prev.length > 0;
+      const prevRow = hasPrev
+        ? prev.map(s=>{const k=s.kg!=null?s.kg+'kg':'BW'; return `<span class="mpill">M${viewMn-1}: ${k}×${s.reps}</span>`;}).join('')
+        : `<span style="font-size:11px;color:var(--text3)">Primer registro</span>`;
+      const currRow = ex.sets.map((s,i)=>{const c=hasPrev?cmpSet(s,prev[i]):''; const k=s.kg!=null?s.kg+'kg':'BW'; return `<span class="mpill ${c}">M${viewMn}: ${k}×${s.reps}${s.type?' '+s.type:''}</span>`;}).join('');
+      const div = document.createElement('div'); div.className='hist-ex';
+      div.innerHTML = `<div class="hist-ex-hdr">
+        <span class="hex-name">${ex.name}</span>
+        <span class="htrend ${hasPrev?tc:'flat'}">${hasPrev?ti+' M'+(viewMn-1)+'→M'+viewMn:'M'+viewMn}</span>
+      </div>
+      <table class="hist-table">
+        <tr><td class="mnum">M${viewMn-1}</td><td><div class="sets-row">${prevRow}</div></td></tr>
+        <tr><td class="mnum">M${viewMn}${isCurrentView?'↗':''}</td><td><div class="sets-row">${currRow}</div></td></tr>
+      </table>`;
       cont.appendChild(div);
     });
   });
 }
 function buildPrevMap(snap){
-  const m={};
-  const arr=snap.sessions||snap;
+  const m={}, arr=snap.sessions||snap;
   arr.forEach(s=>s.exercises.forEach(ex=>{m[ex.id]=ex.sets.map(s=>({...s}));}));
   return m;
 }
-function ttNav(dir){hViewMicro=Math.max(1,Math.min(APP.microNum,hViewMicro+dir));renderHist();}
-function setHF(f){hFilter=f;renderHist();}
+function ttNav(dir){hViewMicro=Math.max(1,Math.min(APP.microNum,hViewMicro+dir)); renderHist();}
+function setHF(f){hFilter=f; renderHist();}
 
 // ── DASHBOARD ──────────────────────────────────────────────────
 let CH={};
@@ -1009,14 +955,11 @@ function dChart(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
 const XY={x:{grid:{color:'#2a2a3a'},ticks:{color:'#888899',font:{size:10}}},y:{grid:{color:'#2a2a3a'},ticks:{color:'#888899',font:{size:10}}}};
 function linReg(xs,ys){
   const n=xs.length,mx=xs.reduce((a,b)=>a+b,0)/n,my=ys.reduce((a,b)=>a+b,0)/n;
-  let num=0,den=0;xs.forEach((x,i)=>{num+=(x-mx)*(ys[i]-my);den+=(x-mx)**2;});
-  const sl=den?num/den:0,ic=my-sl*mx;return{slope:sl,predict:x=>sl*x+ic};
+  let num=0,den=0; xs.forEach((x,i)=>{num+=(x-mx)*(ys[i]-my);den+=(x-mx)**2;});
+  const sl=den?num/den:0,ic=my-sl*mx; return{slope:sl,predict:x=>sl*x+ic};
 }
-
 function renderDash(){
-  // Combine historical + new completed micros for charts
-  const wh=[...HIST_WEIGHT,...APP.wHist];
-  const ch=[...HIST_CAL,...APP.cHist];
+  const wh=[...HIST_WEIGHT,...APP.wHist], ch=[...HIST_CAL,...APP.cHist];
   const realW=wh.map((v,i)=>v!=null?{i,v}:null).filter(Boolean);
   const lastW=realW.length?realW[realW.length-1].v:null;
   const startW=wh.find(v=>v!=null);
@@ -1030,46 +973,41 @@ function renderDash(){
   document.getElementById('d-calobj').textContent=APP.calObj;
 
   dChart('weight');
-  const wLabels=wh.map((_,i)=>i<8?`M${i+1}(h)`:`M${i+1}`);
-  let allLabels=[...wLabels],regLine=[];
-  if(realW.length>=2){
+  const wLabels=wh.map((_,i)=>'M'+(i+1));
+  let allLabels=[...wLabels], regLine=[];
+  if (realW.length>=2){
     const reg=linReg(realW.map(p=>p.i),realW.map(p=>p.v));
     regLine=wh.map((_,i)=>+reg.predict(i).toFixed(2));
     const lastI=realW[realW.length-1].i;
-    for(let pi=1;pi<=4;pi++){allLabels.push(`M${wh.length+pi}*`);regLine.push(+reg.predict(lastI+pi).toFixed(2));}
+    for(let pi=1;pi<=4;pi++){allLabels.push('M'+(wh.length+pi)+'*');regLine.push(+reg.predict(lastI+pi).toFixed(2));}
   }
   const realFull=[...wh,...Array(regLine.length?4:0).fill(null)];
-  const wCtx=document.getElementById('weight-chart').getContext('2d');
-  CH['weight']=new Chart(wCtx,{type:'line',data:{labels:allLabels,datasets:[
-    {label:'Real',data:realFull,borderColor:'#c8f060',backgroundColor:'rgba(200,240,96,.07)',borderWidth:2,pointBackgroundColor:'#c8f060',pointRadius:3,tension:.35,fill:true,spanGaps:true},
-    ...(regLine.length?[{label:'Proyección',data:regLine,borderColor:'rgba(200,240,96,.45)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.35}]:[]),
+  CH['weight']=new Chart(document.getElementById('weight-chart').getContext('2d'),{type:'line',data:{labels:allLabels,datasets:[
+    {data:realFull,borderColor:'#c8f060',backgroundColor:'rgba(200,240,96,.07)',borderWidth:2,pointBackgroundColor:'#c8f060',pointRadius:3,tension:.35,fill:true,spanGaps:true},
+    ...(regLine.length?[{data:regLine,borderColor:'rgba(200,240,96,.45)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.35}]:[]),
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:XY}});
 
   renderGoals(lastW,lastC,realW);
 
   dChart('cal');
-  const cLabels=ch.map((_,i)=>i<8?`M${i+1}(h)`:`M${i+1}`);
   CH['cal']=new Chart(document.getElementById('cal-chart').getContext('2d'),{type:'bar',
-    data:{labels:cLabels,datasets:[{data:ch,backgroundColor:ch.map(c=>c?(c>=APP.calObj?'rgba(76,219,122,.6)':'rgba(200,240,96,.4)'):'rgba(42,42,58,.4)'),borderRadius:4}]},
+    data:{labels:wh.map((_,i)=>'M'+(i+1)),datasets:[{data:ch,backgroundColor:ch.map(c=>c?(c>=APP.calObj?'rgba(76,219,122,.6)':'rgba(200,240,96,.4)'):'rgba(42,42,58,.4)'),borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:XY}});
 
-  renderSessCharts();renderStagAlerts();
+  renderSessCharts(); renderStagAlerts();
 }
-
 function renderGoals(lastW,lastC,realW){
   const g=APP.goals;
   document.getElementById('gw-input').value=g.w||'';
   const startW=[...HIST_WEIGHT,...APP.wHist].find(v=>v!=null)||null;
-  if(g.w&&lastW&&startW){
-    const total=g.w-startW,done=lastW-startW;
-    const pct=total>0?Math.min(100,Math.round((done/total)*100)):0;
+  if (g.w&&lastW&&startW){
+    const total=g.w-startW,done=lastW-startW,pct=total>0?Math.min(100,Math.round((done/total)*100)):0;
     document.getElementById('gw-label').textContent=g.w+' kg';
-    const bar=document.getElementById('gw-bar');bar.style.width=Math.max(0,pct)+'%';
-    bar.className='prog-bar'+(pct>=100?' up':'');
+    const bar=document.getElementById('gw-bar'); bar.style.width=Math.max(0,pct)+'%'; bar.className='prog-bar'+(pct>=100?' up':'');
     let eta='';
-    if(realW&&realW.length>=2){
+    if (realW&&realW.length>=2){
       const reg=linReg(realW.map(p=>p.i),realW.map(p=>p.v));
-      eta=reg.slope>0.01?pct>=100?'🎯 Objetivo alcanzado':`Progreso: ${pct}% · Ritmo: +${reg.slope.toFixed(2)} kg/micro · ETA: ~${Math.ceil((g.w-lastW)/reg.slope)} micros`:'Ritmo insuficiente — revisa calorías';
+      eta=reg.slope>0.01?pct>=100?'Objetivo alcanzado':`Progreso: ${pct}% · Ritmo: +${reg.slope.toFixed(2)} kg/micro · ETA: ~${Math.ceil((g.w-lastW)/reg.slope)} micros`:'Ritmo insuficiente';
     } else eta=`Faltan ${(g.w-lastW).toFixed(1)} kg`;
     document.getElementById('gw-eta').textContent=eta;
   } else {
@@ -1078,12 +1016,12 @@ function renderGoals(lastW,lastC,realW){
     document.getElementById('gw-eta').textContent='Define un objetivo para ver proyección y ETA';
   }
   document.getElementById('gc-input').value=g.c||'';
-  if(g.c&&lastC){
+  if (g.c&&lastC){
     const diff=lastC-g.c,pct=Math.min(100,Math.round((lastC/g.c)*100));
     document.getElementById('gc-label').textContent=g.c+' kcal';
-    const bar=document.getElementById('gc-bar');bar.style.width=Math.min(100,pct)+'%';
+    const bar=document.getElementById('gc-bar'); bar.style.width=Math.min(100,pct)+'%';
     bar.className='prog-bar'+(pct>=100?' up':pct>=80?'':' danger');
-    document.getElementById('gc-eta').textContent=diff>=0?`✓ ${lastC} kcal · ${diff} sobre objetivo`:`⚠ ${lastC} kcal · Faltan ${Math.abs(diff)} kcal`;
+    document.getElementById('gc-eta').textContent=diff>=0?`${lastC} kcal · ${diff} sobre objetivo`:`${lastC} kcal · Faltan ${Math.abs(diff)} kcal`;
   } else {
     document.getElementById('gc-label').textContent='Sin definir';
     document.getElementById('gc-bar').style.width='0%';
@@ -1092,119 +1030,108 @@ function renderGoals(lastW,lastC,realW){
 }
 function saveGoal(type){
   const v=type==='w'?parseFloat(document.getElementById('gw-input').value):parseInt(document.getElementById('gc-input').value);
-  if(!v){showToast('Introduce un valor válido');return;}
-  APP.goals[type]=v;save();
+  if (!v){showToast('Introduce un valor válido');return;}
+  APP.goals[type]=v; save();
   const allW=[...HIST_WEIGHT,...APP.wHist];
   const realW=allW.map((v,i)=>v!=null?{i,v}:null).filter(Boolean);
   const lastW=realW.length?realW[realW.length-1].v:null;
   const lastC=[...HIST_CAL,...APP.cHist].filter(Boolean).slice(-1)[0]||null;
-  renderGoals(lastW,lastC,realW);showToast('Objetivo guardado ✓');
+  renderGoals(lastW,lastC,realW); showToast('Objetivo guardado ✓');
 }
-
 function renderSessCharts(){
   const bal=calcBalance();
-  // Combine historical session progress + new micros
   const combinedProg={};
-  Object.keys(SESS_META).forEach(id=>{
-    combinedProg[id]=[...HIST_SESS_PROG[id],...(APP.sessProg[id]||[])];
-  });
-  const nDone=8+APP.microNum-1;
+  Object.keys(SESS_META).forEach(id=>{combinedProg[id]=[...HIST_SESS_PROG[id],...(APP.sessProg[id]||[])];});
+  const nDone=APP.microNum-1;
   const allLabels=[];
-  for(let i=2;i<=nDone+1;i++) allLabels.push(i===nDone+1?`M${i}↗`:i<=9?`M${i}(h)`:`M${i}`);
+  for(let i=1;i<=nDone+1;i++) allLabels.push(i===nDone+1?`M${i}↗`:`M${i}`);
+  if (!allLabels.length) allLabels.push('M1↗');
 
   dChart('sess-chart');
   setTimeout(()=>{
     const ctx=document.getElementById('sess-chart').getContext('2d');
     const datasets=Object.keys(combinedProg).map(id=>{
-      const hist=combinedProg[id];const color=SESS_META[id]?.color||'#888';
-      const full=[...hist,bal[id]!=null?bal[id]:null];
-      return {label:SESS_META[id]?.name||id,data:full,borderColor:color,backgroundColor:color+'22',borderWidth:2,pointRadius:3,tension:.35,spanGaps:true,
+      const hist=combinedProg[id]; const color=SESS_META[id].color;
+      const full=[...hist, bal[id]!=null?bal[id]:null];
+      return {label:SESS_META[id].name,data:full,borderColor:color,backgroundColor:color+'22',borderWidth:2,pointRadius:3,tension:.35,spanGaps:true,
         pointBackgroundColor:full.map((v,i)=>i===full.length-1?color:v>0?'#4cdb7a':v<0?'#f04c4c':'#55556a')};
     });
     CH['sess-chart']=new Chart(ctx,{type:'line',data:{labels:allLabels,datasets},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:true,labels:{color:'#888899',font:{size:10},boxWidth:11,padding:7}}},
-        scales:{...XY,y:{...XY.y,title:{display:true,text:'Saldo ↑/↓',color:'#55556a',font:{size:10}}}}}});
+        scales:{...XY,y:{...XY.y,title:{display:true,text:'Saldo',color:'#55556a',font:{size:10}}}}}});
   },50);
 
-  const grid=document.getElementById('sess-cards');grid.innerHTML='';
+  const grid=document.getElementById('sess-cards'); grid.innerHTML='';
   Object.keys(combinedProg).forEach(id=>{
-    const hist=combinedProg[id];const color=SESS_META[id]?.color||'#888';
-    const full=[...hist,bal[id]!=null?bal[id]:null];
-    const latest=bal[id]!=null?bal[id]:hist[hist.length-1];
+    const hist=combinedProg[id]; const color=SESS_META[id].color;
+    const full=[...hist, bal[id]!=null?bal[id]:null];
+    const latest=bal[id]!=null?bal[id]:(hist.length?hist[hist.length-1]:0);
     const tc=latest>0?'var(--up)':latest<0?'var(--down)':'var(--text3)';
     const ti=latest>0?'↑':latest<0?'↓':'→';
     const cid='sc-'+id;
-    const card=document.createElement('div');card.className='dcard';
+    const card=document.createElement('div'); card.className='dcard';
     card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-      <div class="dlabel" style="margin:0">${SESS_META[id]?.name||id}</div>
+      <div class="dlabel" style="margin:0">${SESS_META[id].name}</div>
       <span style="font-size:16px;font-weight:700;color:${tc}">${ti}${Math.abs(latest)}</span></div>
       <div style="height:68px"><canvas id="${cid}"></canvas></div>`;
     grid.appendChild(card);
     setTimeout(()=>{
       dChart(cid);
       CH[cid]=new Chart(document.getElementById(cid).getContext('2d'),{type:'bar',
-        data:{labels:allLabels,datasets:[{data:full,backgroundColor:full.map(v=>v>0?'rgba(76,219,122,.55)':v<0?'rgba(240,76,76,.55)':'rgba(85,85,106,.4)'),borderColor:full.map(v=>v>0?'#4cdb7a':v<0?'#f04c4c':'#55556a'),borderWidth:1,borderRadius:3}]},
+        data:{labels:allLabels,datasets:[{data:full,
+          backgroundColor:full.map(v=>v>0?'rgba(76,219,122,.55)':v<0?'rgba(240,76,76,.55)':'rgba(85,85,106,.4)'),
+          borderColor:full.map(v=>v>0?'#4cdb7a':v<0?'#f04c4c':'#55556a'),borderWidth:1,borderRadius:3}]},
         options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-          scales:{x:{grid:{display:false},ticks:{color:'#55556a',font:{size:8}}},y:{grid:{color:'#2a2a3a'},ticks:{color:'#55556a',font:{size:8},stepSize:1},suggestedMin:-3,suggestedMax:4}}}});
+          scales:{x:{grid:{display:false},ticks:{color:'#55556a',font:{size:8}}},
+            y:{grid:{color:'#2a2a3a'},ticks:{color:'#55556a',font:{size:8},stepSize:1},suggestedMin:-3,suggestedMax:4}}}});
     },80);
   });
 }
-
 function renderStagAlerts(){
-  const cont=document.getElementById('stag-alerts');cont.innerHTML='';
+  const cont=document.getElementById('stag-alerts'); cont.innerHTML='';
   const combined={};
   Object.keys(SESS_META).forEach(id=>{combined[id]=[...HIST_SESS_PROG[id],...(APP.sessProg[id]||[])];});
   Object.keys(combined).forEach(id=>{
     const sp=combined[id];
-    if(sp.length>=3&&sp.slice(-3).every(v=>v<=0)){
-      const d=document.createElement('div');d.className='alert-card';
-      d.innerHTML=`<strong>⚠️ ${SESS_META[id]?.name||id}</strong>3 micros consecutivos sin mejora neta`;
+    if (sp.length>=3&&sp.slice(-3).every(v=>v<=0)){
+      const d=document.createElement('div'); d.className='alert-card';
+      d.innerHTML=`<strong>&#9888;&#65039; ${SESS_META[id].name}</strong>3 micros consecutivos sin mejora neta`;
       cont.appendChild(d);
     }
   });
 }
 
-// ── EDITOR TOOLS ───────────────────────────────────────────────
+// ── EDITOR ─────────────────────────────────────────────────────
 function quickEditLog(){
   const day=document.getElementById('eq-day').value.trim();
   const w=parseFloat(document.getElementById('eq-w').value);
   const c=parseInt(document.getElementById('eq-c').value);
-  if(!day){document.getElementById('eq-status').textContent='Introduce un día (ej: D3)';return;}
+  if (!day){document.getElementById('eq-status').textContent='Introduce un día (ej: D3)';return;}
   APP.log[day]={w:w||null,c:c||null};
-  save();renderLogList();renderStats();
-  document.getElementById('eq-status').textContent=`✓ ${day} guardado`;
-  document.getElementById('eq-day').value='';document.getElementById('eq-w').value='';document.getElementById('eq-c').value='';
+  save(); renderLogList(); renderStats();
+  document.getElementById('eq-status').textContent=`${day} guardado ✓`;
+  document.getElementById('eq-day').value=''; document.getElementById('eq-w').value=''; document.getElementById('eq-c').value='';
 }
-
 function exportData(){
   const data=localStorage.getItem('b26v2');
-  if(!data){showToast('No hay datos');return;}
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(data).then(()=>showToast('✓ Copiado al portapapeles')).catch(()=>{
-      document.getElementById('import-area').value=data;showToast('Copia el texto del área de abajo');
-    });
-  } else {
-    document.getElementById('import-area').value=data;showToast('Copia el texto del área de abajo');
-  }
+  if (!data){showToast('No hay datos');return;}
+  if (navigator.clipboard){
+    navigator.clipboard.writeText(data).then(()=>showToast('Copiado al portapapeles ✓')).catch(()=>{document.getElementById('import-area').value=data;showToast('Copia el texto de abajo');});
+  } else {document.getElementById('import-area').value=data; showToast('Copia el texto de abajo');}
 }
-
 function importData(){
   const raw=document.getElementById('import-area').value.trim();
-  if(!raw){showToast('Pega el JSON primero');return;}
-  try{
-    JSON.parse(raw);
-    localStorage.setItem('b26v2',raw);
-    showToast('Importado ✓ Recargando...');
-    setTimeout(()=>location.reload(),800);
-  } catch(e){showToast('JSON inválido — revisa el formato');}
+  if (!raw){showToast('Pega el JSON primero');return;}
+  try{JSON.parse(raw); localStorage.setItem('b26v2',raw); showToast('Importado ✓ Recargando...'); setTimeout(()=>location.reload(),800);}
+  catch(e){showToast('JSON inválido');}
 }
 
 // ── INIT ───────────────────────────────────────────────────────
 function initMicroPage(){
   document.getElementById('micro-title').textContent='Microciclo '+APP.microNum;
   document.getElementById('close-mnum').textContent=APP.microNum;
-  renderCal();renderStats();renderSessions();renderLogList();
+  renderCal(); renderStats(); renderSessions(); renderLogList();
 }
 
 initMicroPage();
