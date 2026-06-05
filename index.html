@@ -877,8 +877,16 @@ function confirmClose(){
   const np = {}; sessions.forEach(s=>s.exercises.forEach(ex=>{np[ex.id]=ex.sets.map(s=>({...s}));}));
   APP.prevMicro = np; APP.microNum++; APP.calObj = newCal;
   APP.sessions = null; APP.log = {}; APP.dayCount = 0;
-  sessions = JSON.parse(JSON.stringify(SEED_SESSIONS)); save();
-  closeOverlay('close-overlay');
+sessions=JSON.parse(JSON.stringify(SEED_SESSIONS));
+// Actualizar sets de cada ejercicio con los valores del micro recién cerrado
+sessions.forEach(sess=>{
+  sess.exercises.forEach(ex=>{
+    if(APP.prevMicro[ex.id]){
+      ex.sets=APP.prevMicro[ex.id].map(s=>({...s}));
+    }
+  });
+});
+save();  closeOverlay('close-overlay');
   document.getElementById('so-title').textContent = `Microciclo ${APP.microNum}`;
   document.getElementById('so-cal').value = newCal;
   document.getElementById('so-sub').textContent = `M${APP.microNum-1} archivado ✓`;
