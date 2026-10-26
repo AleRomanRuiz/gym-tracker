@@ -9,10 +9,9 @@
  * recarga en la app. Las cachés solo guardan archivos de la app; los datos del
  * usuario viven en localStorage y ningún cambio de versión los toca.
  */
-const CACHE_VERSION = 'bulk26-v3';
+const CACHE_VERSION = 'bulk26-v4';
 const CACHE_PREFIX  = 'bulk26-';
 const SHELL         = CACHE_VERSION + '-shell';
-const FONTS         = CACHE_VERSION + '-fonts';
 const SHELL_URLS = [
   './',
   './index.html',
@@ -21,6 +20,12 @@ const SHELL_URLS = [
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
+  // Tipografía autoalojada: la app no pide nada a Google y funciona sin red
+  './fonts/barlow-latin-400-normal.woff2',
+  './fonts/barlow-latin-500-normal.woff2',
+  './fonts/barlow-latin-600-normal.woff2',
+  './fonts/barlow-condensed-latin-600-normal.woff2',
+  './fonts/barlow-condensed-latin-700-normal.woff2',
 ];
 
 self.addEventListener('install', e => {
@@ -42,36 +47,16 @@ self.addEventListener('activate', e => {
       // Solo cachés propias y de otra versión: en <usuario>.github.io todos los
       // repos comparten origen, y por tanto también Cache Storage.
       .then(ks => Promise.all(ks
-        .filter(k => k.startsWith(CACHE_PREFIX) && k !== SHELL && k !== FONTS)
+        .filter(k => k.startsWith(CACHE_PREFIX) && k !== SHELL)
         .map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
-const isFont = url =>
-  url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
-
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-
-  // Tipografías de Google: se sirven de caché y se refrescan por detrás, así la
-  // app conserva su tipografía sin conexión tras la primera carga con red.
-  if (isFont(url)) {
-    e.respondWith(
-      caches.open(FONTS).then(c =>
-        c.match(req).then(hit => {
-          const net = fetch(req).then(res => {
-            if (res && (res.ok || res.type === 'opaque')) c.put(req, res.clone());
-            return res;
-          }).catch(() => hit);
-          return hit || net;
-        })
-      )
-    );
-    return;
-  }
 
   if (url.origin !== self.location.origin) return;
 
