@@ -110,4 +110,5 @@ self.addEventListener('fetch', e => {
 
 self.addEventListener('message', e => {
   if (e.data === 'skipWaiting') self.skipWaiting();
+  if (e.data === 'version' && e.source) e.source.postMessage({version: CACHE_VERSION});
 });

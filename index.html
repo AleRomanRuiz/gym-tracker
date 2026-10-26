@@ -2200,9 +2200,15 @@ function registerSW(){
   // Sin controlador previo es la primera instalación, no una actualización
   let hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // En una actualización esta página sigue siendo la versión vieja hasta
+    // recargar, así que la etiqueta no cambia; solo en la primera instalación.
     if (hadController) document.getElementById('upd-banner').classList.add('show');
+    else showAppVersion();
     hadController = true;
-    showAppVersion();
+  });
+  navigator.serviceWorker.addEventListener('message', e => {
+    const el = document.getElementById('app-version');
+    if (el && e.data && e.data.version) el.textContent = 'Versión de la app: ' + e.data.version;
   });
   navigator.serviceWorker.register('./sw.js').then(reg => {
     // Por si quedó una versión esperando de antes de que sw.js hiciera skipWaiting
@@ -2218,15 +2224,11 @@ function registerSW(){
   }).catch(()=>{});
   showAppVersion();
 }
-// Versión del shell en caché: sirve para comprobar en el iPhone que un
-// despliegue ha llegado.
+// CACHE_VERSION del service worker que sirve la página: sirve para comprobar
+// en el iPhone que un despliegue ha llegado. Responde en el listener 'message'.
 function showAppVersion(){
-  const el = document.getElementById('app-version');
-  if (!el || !window.caches) return;
-  caches.keys().then(ks => {
-    const k = ks.find(k => /^bulk26-.*-shell$/.test(k));
-    el.textContent = k ? 'Versión de la app: ' + k.slice(0, -'-shell'.length) : '';
-  }).catch(()=>{});
+  const sw = navigator.serviceWorker.controller;
+  if (sw) sw.postMessage('version');
 }
 
 // ── EXPORTAR A CSV ─────────────────────────────────────────────
