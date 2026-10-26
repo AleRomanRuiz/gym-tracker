@@ -1208,13 +1208,11 @@ function kindVar(sid){return SESS_KIND[sid] ? 'var(--'+SESS_KIND[sid]+')' : 'var
 function renderCal(){
   const el = document.getElementById('cal-week'); el.innerHTML = '';
   el.style.gridTemplateColumns = 'repeat('+SCHEDULE.length+',minmax(0,1fr))';
-  let sc = 0;
-  const done = Object.keys(APP.log).length;
+  const cur = currentSessionId();
   SCHEDULE.forEach((sid, i) => {
     const isRest = sid === 'rest';
-    if (!isRest) sc++;
-    const isDone = !isRest && sc <= done;
-    const isCurrent = !isRest && sc === done + 1;
+    const isDone = !isRest && sessHasDone(sid);
+    const isCurrent = !isRest && sid === cur;
     const d = document.createElement('div');
     d.className = 'cal-day' + (isCurrent?' current':'') + (isDone?' done':'')
       + (!isRest&&!isCurrent?' training':'') + (isRest&&!isCurrent?' rest-day':'');
@@ -1226,15 +1224,15 @@ function renderCal(){
     };
     el.appendChild(d);
   });
-  renderMicroSub(done);
+  renderMicroSub();
 }
 // Contexto del ciclo: qué sesión toca hoy, sin tener que contar en el calendario
-function renderMicroSub(done){
+function renderMicroSub(){
   const el = document.getElementById('micro-sub'); if (!el) return;
-  const total = SCHEDULE.filter(s=>s!=='rest').length;
+  const train = SCHEDULE.filter(s=>s!=='rest');
   const cur = currentSessionId();
   el.innerHTML = cur
-    ? `Sesión ${done+1} de ${total} · hoy <b>${esc((sessions.find(s=>s.id===cur)||{}).name||'')}</b>`
+    ? `Sesión ${train.indexOf(cur)+1} de ${train.length} · hoy <b>${esc((sessions.find(s=>s.id===cur)||{}).name||'')}</b>`
     : `Ciclo completo · <b>listo para cerrar</b>`;
 }
 
@@ -1260,16 +1258,15 @@ function renderStats(){
 }
 
 // ── SESIONES ───────────────────────────────────────────────────
-// Itera SCHEDULE directamente: el orden del ciclo vive en un solo sitio.
+// Sesión de hoy: la primera del split, en orden, sin ninguna serie hecha en el
+// micro en curso. Las extra (tobillo) no están en SCHEDULE, así que no cuentan.
+// Antes salía de contar entradas del log de peso, que no tienen que ver.
+function sessHasDone(sid){
+  const s = sessions.find(x => x.id === sid);
+  return !!s && s.exercises.some(ex => ex.sets.some(st => st.done));
+}
 function currentSessionId(){
-  const done = Object.keys(APP.log).length;
-  let sc = 0;
-  for (let i=0;i<SCHEDULE.length;i++){
-    if (SCHEDULE[i]==='rest') continue;
-    sc++;
-    if (sc === done+1) return SCHEDULE[i];
-  }
-  return null;
+  return SCHEDULE.find(sid => sid !== 'rest' && sessions.some(s => s.id === sid) && !sessHasDone(sid)) || null;
 }
 let sessionsRendered = false;
 function renderSessions(){
@@ -1395,8 +1392,14 @@ function toggleFallo(i){
   EC.sets[i].reps = EC.sets[i].reps==='Fallo' ? 10 : 'Fallo';
   renderMSets();
 }
+// doneAt: momento en que se marcó hecha. Campo propio; `done` sigue igual.
+function markDone(set, on){
+  set.done = on;
+  if (on){ if (!set.doneAt) set.doneAt = new Date().toISOString(); }
+  else delete set.doneAt;
+}
 function toggleECDone(i){
-  EC.sets[i].done = !EC.sets[i].done;
+  markDone(EC.sets[i], !EC.sets[i].done);
   renderMSets();
 }
 function addSet(){
@@ -1409,7 +1412,7 @@ function rmSet(i){EC.sets.splice(i,1); renderMSets();}
 function saveExercise(){
   const sess = sessions.find(s=>s.id===EC.sid);
   sess.exercises[EC.ei].sets = EC.sets.map(s=>({...s}));
-  save(); invalidateAnalytics(); closeOverlay('edit-modal'); renderSessions(); renderStats(); showToast('Guardado ✓');
+  save(); invalidateAnalytics(); closeOverlay('edit-modal'); renderSessions(); renderStats(); renderCal(); showToast('Guardado ✓');
 }
 
 // ── SERIE HECHA ────────────────────────────────────────────────
@@ -1417,8 +1420,8 @@ function toggleSetDone(sid, ei, si, evt){
   if (evt) evt.stopPropagation();
   const sess = sessions.find(s=>s.id===sid); if (!sess) return;
   const set = sess.exercises[ei].sets[si]; if (!set) return;
-  set.done = !set.done;
-  save(); renderSessions();
+  markDone(set, !set.done);
+  save(); renderSessions(); renderCal();
 }
 
 // ── LOG DIARIO ─────────────────────────────────────────────────
@@ -1494,10 +1497,10 @@ function confirmClose(){
   APP.snapshots.push({microNum:APP.microNum, sessions:JSON.parse(JSON.stringify(sessions))});
   APP.wHist.push(avgW); APP.cHist.push(avgC);
   Object.keys(APP.sessProg).forEach(id => APP.sessProg[id].push(bal[id]||0));
-  const np = {}; sessions.forEach(s=>s.exercises.forEach(ex=>{np[ex.id]=ex.sets.map(({done, ...s})=>s);}));
+  const np = {}; sessions.forEach(s=>s.exercises.forEach(ex=>{np[ex.id]=ex.sets.map(({done, doneAt, ...s})=>s);}));
   APP.prevMicro = np; APP.microNum++; APP.calObj = newCal;
   APP.log = {}; APP.dayCount = 0;
-  sessions.forEach(s=>s.exercises.forEach(ex=>ex.sets.forEach(st=>{delete st.done;})));
+  sessions.forEach(s=>s.exercises.forEach(ex=>ex.sets.forEach(st=>{delete st.done; delete st.doneAt;})));
   // La estructura de sesiones se conserva tal cual — incluidos los ejercicios
   // dados de alta o de baja desde el Editor. Los sets ya arrancan con los
   // valores del micro recién cerrado: prevMicro se acaba de construir de ahí.
@@ -2411,7 +2414,7 @@ function resetTraining(){
   APP.splitStart = APP.microNum;
 
   sessions.forEach(s => s.exercises.forEach(ex => ex.sets.forEach(st => {
-    st.kg = null; delete st.done;
+    st.kg = null; delete st.done; delete st.doneAt;
   })));
 
   save(); invalidateAnalytics();
