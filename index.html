@@ -2515,8 +2515,10 @@ function exportData(){
 // ── COPIA COMPLETA EN ARCHIVO ──────────────────────────────────
 // El archivo envuelve b26v2 sin tocar una sola clave: `data` es el objeto
 // guardado tal cual y el resto son metadatos para validar al importar.
-// schemaVersion versiona el sobre, no el contenido (eso ya es splitVersion).
-const EXPORT_SCHEMA_VERSION = 1;
+// schemaVersion: 1 = datos anteriores a la v3; 2 = datos v3 (Bilbo, tobillo).
+// Sube para que una versión vieja de la app rechace un archivo que no entiende.
+// Al importar un 1 se escribe tal cual y la migración v3 corre al recargar.
+const EXPORT_SCHEMA_VERSION = 2;
 function buildExport(){
   const raw = localStorage.getItem('b26v2');
   if (raw === null) return null;
@@ -2609,6 +2611,11 @@ function validateAppData(d){
     err.push('prevMicro tiene entradas que no son listas de series');
   if (isObj(d.sessProg) && !Object.values(d.sessProg).every(Array.isArray))
     err.push('sessProg tiene entradas que no son listas');
+  if (d.dataVersion !== undefined && !Number.isInteger(d.dataVersion)) err.push('dataVersion no es un entero');
+  if (Number.isInteger(d.dataVersion) && d.dataVersion > DATA_VERSION)
+    err.push('datos de una versión más nueva de la app (v'+d.dataVersion+')');
+  if (d.bilbo !== undefined && (!isObj(d.bilbo) || (d.bilbo.events !== undefined && !Array.isArray(d.bilbo.events))))
+    err.push('bilbo no tiene la forma esperada');
   return err;
 }
 // Devuelve {data, raw, exportedAt} o lanza un Error con el motivo
@@ -2643,6 +2650,8 @@ function importText(text){
   if (bk.exportedAt) lineas.push('  · Exportada el ' + new Date(bk.exportedAt).toLocaleString('es-ES'));
   if (d.splitVersion !== SPLIT_VERSION)
     lineas.push('', 'La copia es de un split anterior: al cargar se migrará al actual.');
+  if (!(d.dataVersion >= DATA_VERSION))
+    lineas.push('', 'La copia es anterior a la serie Bilbo/tobillo: al cargar se migrará (mismo proceso que la actualización).');
   lineas.push('', 'Ahora tienes M' + APP.microNum + ' con ' + (APP.snapshots||[]).length + ' archivados.',
               'El estado actual se guarda en ' + PREIMPORT_KEY + ' (sustituye a la copia de la importación anterior) y se puede recuperar con «Deshacer la última importación».',
               '', '¿Importar?');

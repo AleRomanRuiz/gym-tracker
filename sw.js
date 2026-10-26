@@ -9,7 +9,7 @@
  * recarga en la app. Las cachés solo guardan archivos de la app; los datos del
  * usuario viven en localStorage y ningún cambio de versión los toca.
  */
-const CACHE_VERSION = 'bulk26-v2';
+const CACHE_VERSION = 'bulk26-v3';
 const CACHE_PREFIX  = 'bulk26-';
 const SHELL         = CACHE_VERSION + '-shell';
 const FONTS         = CACHE_VERSION + '-fonts';
