@@ -33,6 +33,22 @@ fiable en standalone, la app se reanuda sin recargar, sin botón de recargar).
 - **El push a `main` (= despliegue) lo hace el usuario.** Trabajo en rama, commits
   pequeños, sin merge ni push sin confirmación.
 
+## Nunca exigir reinstalar la PWA
+
+En iOS la PWA instalada tiene su propio contenedor de almacenamiento y no se
+asume que `b26v2` sobreviva a quitarla y volver a añadirla. Ningún cambio puede
+requerir reinstalarla: nada de tocar `apple-mobile-web-app-status-bar-style`
+(se queda en `black`) ni otros metadatos que iOS fija al instalar. Los cambios
+del manifest que solo se aplican al reinstalar se pueden hacer, pero no se
+cuenta con ellos.
+
+## Diseño
+
+Tokens de color en `:root` (claro) y `prefers-color-scheme: dark`; ningún color
+fuera de tokens, tampoco en Chart.js (se leen con `getComputedStyle`).
+Tipografía autoalojada en `fonts/` (Barlow / Barlow Condensed, OFL), precacheada
+por `sw.js`: nada de fuentes por red.
+
 ## Restricciones
 
 - Sin dependencias ni build: nada de npm, CDNs nuevos ni frameworks.
