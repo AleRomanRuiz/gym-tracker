@@ -719,7 +719,7 @@ location.reload();</div>
 d.sessions[2].exercises[1].sets[0].kg = 45;
 localStorage.setItem('b26v2', JSON.stringify(d));
 location.reload();</div>
-      <div class="editor-step"><strong>Índices sesiones: 0=E1 · 1=T1 · 2=P1 · 3=BR · 4=E2 · 5=T2 · 6=P2</strong></div>
+      <div class="editor-step"><strong>Índices sesiones: 0=E1 · 1=T1 · 2=P1 · 3=BR · 4=E2 · 5=T2 · 6=P2 · 7=Tobillo</strong></div>
       <div class="editor-step"><strong>Ver índices de ejercicios de una sesión</strong></div>
       <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
 d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
@@ -865,7 +865,19 @@ const SPLIT_VERSION = 2;                 // subir al cambiar la estructura del s
 const SCHEDULE = ['empuje1','traccion1','rest','pierna1','brazo','rest','empuje2','traccion2','rest','pierna2','rest'];
 const SSHORT   = ['E1','T1','—','P1','BR','—','E2','T2','—','P2','—'];
 const SCOLORS  = ['push','pull','rd','legs','arm','rd','push','pull','rd','legs','rd'];
-const SESS_FILTERS = ['Todos','Empuje 1','Tracción 1','Pierna 1','Brazo','Empuje 2','Tracción 2','Pierna 2'];
+const SESS_FILTERS = ['Todos','Empuje 1','Tracción 1','Pierna 1','Brazo','Empuje 2','Tracción 2','Pierna 2','Tobillo'];
+// Versión de la estructura de datos dentro de b26v2 (independiente del split).
+// 3 = serie Bilbo como ejercicio propio + sesión extra de tobillo.
+const DATA_VERSION = 3;
+const PRE_V3_KEY = 'b26v2_backup_pre_v3';
+// Serie Bilbo de press banca: un ejercicio por sesión de empuje. E2 conserva el
+// id del ejercicio custom que ya tenía historial; E1 estrena id porque antes
+// vivía como sets[0] (topset) de press_banca.
+const BILBO = {empuje1:'bilbo_e1', empuje2:'custom_1788182611607'};
+const BILBO_SIDS = ['empuje1','empuje2'];
+const BILBO_DEFAULTS = {rmRef:100, startPct:0.5, step:2.5, threshold:15, cycles:3,
+  transitionSessions:3, transitionPct:0.8, transitionReps:5};
+const ANKLE_OLD_IDS = ['dorsiflexion_tobillo','inversion_eversion_tobillo','equilibrio_monopodal','gemelo_unilateral_exc'];
 const SESS_META = {
   empuje1:{name:'Empuje 1',color:'#c8f060'}, traccion1:{name:'Tracción 1',color:'#60d0f0'},
   pierna1:{name:'Pierna 1',color:'#f0b040'},  brazo:{name:'Brazo',color:'#b060f0'},
@@ -873,7 +885,8 @@ const SESS_META = {
   pierna2:{name:'Pierna 2',color:'#e0a030'},
 };
 const MUSCLE_GROUPS = ['Pecho','Espalda','Hombro','Bíceps','Tríceps','Cuádriceps',
-  'Isquiosurales','Glúteos','Gemelos','Abdomen','Antebrazo','Aductores','Lumbares','Sin clasificar'];
+  'Isquiosurales','Glúteos','Gemelos','Abdomen','Antebrazo','Aductores','Lumbares',
+  'Tobillo/propiocepción','Sin clasificar'];
 // Umbrales orientativos (series/semana). Solo alimentan el indicador de estado.
 const MEV_TABLE = {
   'Pecho':8,'Espalda':9,'Hombro':8,'Bíceps':7,'Tríceps':7,'Cuádriceps':9,
@@ -883,7 +896,8 @@ const MEV_TABLE = {
 // ── DATOS DE EJERCICIOS ────────────────────────────────────────
 const SEED_SESSIONS = [
   {id:'empuje1', name:'Empuje 1', tag:'Pecho · Hombro · Tríceps', exercises:[
-    {id:'press_banca', name:'Press banca', obs:'', rir:1, muscle:'Pecho', sets:[{kg:null,reps:6,type:'topset'},{kg:null,reps:8,type:'backoff'},{kg:null,reps:8,type:'backoff'}]},
+    {id:'bilbo_e1', name:'Serie Bilbo', obs:'', rir:0, muscle:'Pecho', sets:[{kg:null,reps:15,type:'topset'}]},
+    {id:'press_banca', name:'Press banca', obs:'', rir:1, muscle:'Pecho', sets:[{kg:null,reps:8,type:'backoff'},{kg:null,reps:8,type:'backoff'}]},
     {id:'triceps_katana', name:'Tríceps katana', obs:'', rir:1, muscle:'Tríceps', sets:[{kg:null,reps:9,type:''},{kg:null,reps:8,type:''},{kg:null,reps:'Fallo',type:'dropset'}]},
     {id:'press_incl_maq', name:'Press inclinado máquina', obs:'', rir:0, muscle:'Pecho', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:8,type:''}]},
     {id:'pajaros_polea_e1', name:'Pájaros polea cruzada', obs:'', rir:0, muscle:'Hombro', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:9,type:''}]},
@@ -912,10 +926,6 @@ const SEED_SESSIONS = [
     {id:'hip_thrust', name:'Hip thrust', obs:'', rir:0, muscle:'Glúteos', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
   ]},
   {id:'brazo', name:'Brazo', tag:'Movilidad · Brazo · Núcleo', exercises:[
-    {id:'dorsiflexion_tobillo', name:'Dorsiflexión tobillo con banda (knee-to-wall)', obs:'Movilidad — fase 1', rir:0, muscle:'Sin clasificar', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
-    {id:'inversion_eversion_tobillo', name:'Inversión/eversión tobillo con banda', obs:'Movilidad — fase 1', rir:0, muscle:'Sin clasificar', sets:[{kg:null,reps:15,type:''},{kg:null,reps:15,type:''},{kg:null,reps:15,type:''}]},
-    {id:'equilibrio_monopodal', name:'Equilibrio monopodal (progresión)', obs:'Movilidad — fase 1. Fase 2 (cuando no dé molestias): pogo jumps, saltos laterales, bounds con parada, drop controlado 15-20cm — introducir progresivamente.', rir:0, muscle:'Sin clasificar', sets:[{kg:null,reps:30,type:''},{kg:null,reps:30,type:''}]},
-    {id:'gemelo_unilateral_exc', name:'Elevación gemelo unilateral (énfasis excéntrico)', obs:'', rir:0, muscle:'Gemelos', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
     {id:'press_militar_manc', name:'Press militar mancuernas', obs:'', rir:0, muscle:'Hombro', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:8,type:''}]},
     {id:'dead_curl_brazo', name:'Dead curl banco scot', obs:'', rir:0, muscle:'Bíceps', sets:[{kg:null,reps:9,type:''},{kg:null,reps:7,type:''},{kg:null,reps:7,type:''}]},
     {id:'kaz_press', name:'Kaz press', obs:'', rir:1, muscle:'Tríceps', sets:[{kg:null,reps:9,type:''},{kg:null,reps:9,type:''},{kg:null,reps:8,type:''}]},
@@ -929,6 +939,7 @@ const SEED_SESSIONS = [
     {id:'ext_ante_b2', name:'Extensores antebrazo polea', obs:'Núcleo — también válido en Pierna 1', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
   ]},
   {id:'empuje2', name:'Empuje 2', tag:'Pecho · Hombro · Tríceps', exercises:[
+    {id:'custom_1788182611607', name:'Serie Bilbo', obs:'', rir:0, muscle:'Pecho', sets:[{kg:null,reps:15,type:''}]},
     {id:'press_incl_manc', name:'Press inclinado mancuernas', obs:'', rir:1, muscle:'Pecho', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:8,type:''}]},
     {id:'ext_triceps_unilat_e2', name:'Extensión unilateral en polea', obs:'', rir:0, muscle:'Tríceps', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:8,type:''}]},
     {id:'aperturas_polea', name:'Aperturas polea sentado', obs:'', rir:0, muscle:'Pecho', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:6,type:''}]},
@@ -957,6 +968,22 @@ const SEED_SESSIONS = [
     {id:'prensa_cuad', name:'Prensa amarilla cuádriceps', obs:'', rir:1, muscle:'Cuádriceps', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
   ]},
 ];
+// Sesión extra: fuera de SCHEDULE, una vez por micro. Las reps de los ejercicios
+// con unit:'s' son segundos; «por lado» va en la observación.
+const TOB = 'Tobillo/propiocepción';
+const sx = (n, reps) => Array.from({length:n}, () => ({kg:null, reps, type:''}));
+const TOBILLO_SESSION = {id:'tobillo', name:'Tobillo', tag:'Movilidad · Propiocepción', extra:true,
+  obs:'Fase 1. Pasar a fase 2 tras 2 sesiones sin dolor ni hinchazón a 24-48 h y aterrizajes controlados',
+  exercises:[
+    {id:'tob_dorsiflexion', name:'Dorsiflexión knee-to-wall', obs:'Por lado', rir:0, muscle:TOB, sets:sx(2,10)},
+    {id:'tob_gemelo_exc', name:'Elevación gemelo unilateral excéntrica', obs:'Por lado', rir:0, muscle:TOB, sets:sx(2,10)},
+    {id:'tob_equilibrio', name:'Equilibrio monopodal ojos cerrados', obs:'Por lado · SIN venda', rir:0, muscle:TOB, unit:'s', sets:sx(3,30)},
+    {id:'tob_ybalance', name:'Alcances Y-balance', obs:'Por dirección y lado · SIN venda', rir:0, muscle:TOB, sets:sx(2,5)},
+    {id:'tob_pogo', name:'Pogo jumps bipodales submáximos', obs:'CON venda', rir:0, muscle:TOB, sets:sx(3,15)},
+    {id:'tob_saltos_lat', name:'Saltos laterales bipodales sobre línea', obs:'CON venda', rir:0, muscle:TOB, sets:sx(3,10)},
+    {id:'tob_aterrizaje', name:'Aterrizaje estable monopodal tras salto corto', obs:'Por lado · CON venda', rir:0, muscle:TOB, sets:sx(2,5)},
+  ]};
+SEED_SESSIONS.push(JSON.parse(JSON.stringify(TOBILLO_SESSION)));
 
 // Mapa split v1 → v2. Solo se usa una vez, en la migración: arrastra los kg de
 // trabajo de cada movimiento que sobrevive al cambio de split (mismo id = directo).
@@ -1002,6 +1029,8 @@ function defaultApp(){
     log: {},
     dayCount: 0,
     snapshots: buildInitialSnapshots(),
+    dataVersion: DATA_VERSION,
+    bilbo: {config: Object.assign({}, BILBO_DEFAULTS), events: []},
   };
 }
 
@@ -1068,12 +1097,70 @@ function runMigrations(app){
   return notes;
 }
 
+// ── MIGRACIÓN 3: BILBO Y TOBILLO ──────────────────────────────
+// Solo toca sessions y prevMicro del micro en curso; los snapshots no se miran.
+// Cada serie se mueve como el mismo objeto, sin copiar ni reescribir campos.
+// Idempotente por dataVersion y, además, cada paso comprueba la estructura.
+function isObj(v){return v !== null && typeof v === 'object' && !Array.isArray(v);}
+function ensureBilboState(app){
+  if (!isObj(app.bilbo)) app.bilbo = {};
+  app.bilbo.config = Object.assign({}, BILBO_DEFAULTS, isObj(app.bilbo.config) ? app.bilbo.config : {});
+  if (!Array.isArray(app.bilbo.events)) app.bilbo.events = [];
+}
+let MIGRATION_V3_BLOCKED = false;
+function runMigrationsV3(app){
+  ensureBilboState(app);
+  if (app.dataVersion >= DATA_VERSION) return [];
+  // Copia de lo que hay en disco antes de escribir nada. No se sobrescribe
+  // nunca: la primera es la del estado real previo a la v3.
+  const raw = localStorage.getItem('b26v2');
+  try{
+    if (raw !== null && localStorage.getItem(PRE_V3_KEY) === null){
+      localStorage.setItem(PRE_V3_KEY, raw);
+      if (localStorage.getItem(PRE_V3_KEY) !== raw) throw new Error();
+    }
+  }catch(e){ MIGRATION_V3_BLOCKED = true; return []; }
+
+  const S = app.sessions;   // null = se usará SEED_SESSIONS, que ya trae la estructura nueva
+  if (Array.isArray(S)){
+    const e1 = S.find(s => s.id === 'empuje1');
+    if (e1 && !e1.exercises.some(ex => ex.id === BILBO.empuje1)){
+      const pb = e1.exercises.find(ex => ex.id === 'press_banca');
+      const moved = pb && pb.sets[0] && pb.sets[0].type === 'topset' ? pb.sets.shift() : null;
+      e1.exercises.unshift({id:BILBO.empuje1, name:'Serie Bilbo', obs:'', rir:0, muscle:'Pecho',
+        sets:[moved || {kg:null, reps:BILBO_DEFAULTS.threshold, type:'topset'}]});
+    }
+    const e2 = S.find(s => s.id === 'empuje2');
+    if (e2){
+      const i = e2.exercises.findIndex(ex => ex.id === BILBO.empuje2);
+      if (i > 0) e2.exercises.unshift(e2.exercises.splice(i, 1)[0]);
+      if (i < 0) e2.exercises.unshift({id:BILBO.empuje2, name:'Serie Bilbo', obs:'', rir:0, muscle:'Pecho',
+        sets:[{kg:null, reps:BILBO_DEFAULTS.threshold, type:''}]});
+      if (e2.exercises[0].muscle !== 'Pecho') e2.exercises[0].muscle = 'Pecho';
+    }
+    const br = S.find(s => s.id === 'brazo');
+    if (br) br.exercises = br.exercises.filter(ex => !ANKLE_OLD_IDS.includes(ex.id));
+    if (!S.some(s => s.id === 'tobillo')) S.push(JSON.parse(JSON.stringify(TOBILLO_SESSION)));
+  }
+  // prevMicro: la referencia de comparación también pierde el topset
+  const pm = app.prevMicro;
+  if (isObj(pm) && !pm[BILBO.empuje1] && Array.isArray(pm.press_banca)
+      && pm.press_banca[0] && pm.press_banca[0].type === 'topset')
+    pm[BILBO.empuje1] = [pm.press_banca.shift()];
+  app.dataVersion = DATA_VERSION;
+  return ['serie Bilbo y bloque de tobillo'];
+}
+
 let APP = ls('b26v2', null);
 let MIGRATION_NOTES = [];
+let MIGRATED_V3 = false;
 if (APP === null) {
   APP = defaultApp();
 } else {
   MIGRATION_NOTES = runMigrations(APP);
+  const n3 = runMigrationsV3(APP);
+  MIGRATED_V3 = n3.length > 0;
+  MIGRATION_NOTES = MIGRATION_NOTES.concat(n3);
 }
 
 let sessions = APP.sessions
@@ -2069,7 +2156,6 @@ function importData(){
 // portapapeles exportData). Comprueba estructura, no valores: un kg raro no
 // rompe la app, una sesión sin `exercises` sí.
 const PREIMPORT_KEY = 'b26v2_backup_preimport';
-const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 function checkSessions(arr, where, err){
   if (!Array.isArray(arr)){err.push(where+' no es una lista'); return;}
   arr.forEach((s, i) => {
@@ -2343,6 +2429,7 @@ function initMicroPage(){
 initMicroPage();
 registerSW();
 if (MIGRATION_NOTES.length) setTimeout(()=>showToast('Actualizado: ' + MIGRATION_NOTES[MIGRATION_NOTES.length-1]), 600);
+if (MIGRATION_V3_BLOCKED) setTimeout(()=>alert('No se pudo guardar la copia previa a la actualización de datos (¿almacenamiento lleno?), así que no se ha migrado nada: la app sigue con la estructura anterior.\n\nExporta una copia completa desde Editor y avisa antes de seguir.'), 700);
 try{
   const flash = sessionStorage.getItem('b26_flash');
   if (flash){ sessionStorage.removeItem('b26_flash'); setTimeout(()=>showToast(flash), 300); }
