@@ -229,6 +229,29 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;
   transition:all .16s var(--ease);}
 .add-set-btn:active{border-color:var(--accent);color:var(--accent);}
 
+.sess-obs{padding:10px var(--s4) 0 19px;font-size:11.5px;font-style:italic;color:var(--text2);line-height:1.45;}
+.ext-ok{color:var(--up);font-weight:700;} .ext-mid{color:var(--warn);font-weight:700;} .ext-no{color:var(--text2);font-weight:700;}
+/* Serie Bilbo: primer bloque de Empuje 1 y 2, tarjeta propia */
+.bilbo-row{padding-top:var(--s3);}
+.bilbo{padding:var(--s3);border-radius:var(--r-md);
+  background:linear-gradient(150deg,rgba(200,240,96,.11),rgba(200,240,96,.02));
+  border:1px solid rgba(200,240,96,.38);box-shadow:var(--lift);}
+.bilbo-top{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s2);margin-bottom:10px;}
+.bilbo-tag{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;letter-spacing:.02em;color:var(--accent);}
+.bilbo-phase{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);text-align:right;}
+.bilbo-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin-bottom:10px;}
+.bilbo-val{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:27px;line-height:1;font-variant-numeric:tabular-nums;}
+.bilbo-val small{font-size:12px;font-weight:600;color:var(--text3);margin-left:3px;}
+.bilbo-res{margin-top:9px;font-size:12px;color:var(--text2);line-height:1.5;}
+.bilbo-res b{color:var(--warn);font-weight:700;}
+.bilbo-next{margin-top:4px;color:var(--text3);font-size:11.5px;}
+.bilbo-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;}
+.bilbo-btn{padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:700;
+  border:1px solid var(--border-str);background:var(--surface2);color:var(--text2);}
+.bilbo-btn.primary{background:var(--accent);border-color:var(--accent);color:#08080c;}
+.bilbo-btn:active{transform:scale(.96);}
+.bilbo-rm{width:92px;padding:9px 10px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface);color:var(--text);font-size:16px;outline:none;}
 .rest-block{margin:0 var(--s3) var(--s3);padding:11px var(--s4);border-radius:var(--r-md);
   display:flex;align-items:center;gap:10px;border:1px dashed var(--border);opacity:.65;}
 .rest-ico{font-size:15px;filter:grayscale(.4);}
@@ -644,7 +667,7 @@ canvas{width:100%!important;}
   <div class="dash-sec">
     <div class="dash-title">Volumen por grupo muscular</div>
     <div class="dcard wide">
-      <div class="dlabel">Series semanales &middot; actual vs MEV orientativo</div>
+      <div class="dlabel" id="vol-label">Series semanales &middot; actual vs MEV orientativo</div>
       <div class="chart-wrap" id="vol-chart-wrap" style="height:300px;margin-top:8px"><canvas id="vol-chart"></canvas></div>
       <div id="vol-gaps"></div>
     </div>
@@ -780,6 +803,7 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
         <li>Las comparaciones de progreso y los saldos por sesión</li>
         <li>Los kilos guardados en las series actuales</li>
         <li>El registro diario del microciclo en curso</li>
+        <li>Las fases confirmadas de la serie Bilbo (vuelve al ciclo 1)</li>
       </ul>
       <div class="rst-keep"><b>Se conserva intacto</b>Sesiones, ejercicios, número de series, repeticiones prescritas, tipo de serie, RIR, observaciones y grupos musculares. También los ejercicios que hayas añadido tú.</div>
       <label class="rst-check">
@@ -1184,6 +1208,153 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 function closeOverlay(id){document.getElementById(id).classList.remove('open');}
 
+// ── SERIE BILBO: REPLAY ────────────────────────────────────────
+// El estado del bloque no se guarda: se recalcula recorriendo en orden las
+// series Bilbo hechas (snapshots por microNum con E1 antes que E2, y después el
+// micro en curso) junto con los eventos que confirma el usuario, cada uno
+// anclado a un micro/sesión. Corregir una serie o un evento se propaga solo y
+// el resultado es siempre el mismo para los mismos datos.
+const r25 = kg => Math.round(kg / 2.5) * 2.5;
+function repsOf(r){const n = typeof r === 'number' ? r : parseInt(r); return isNaN(n) ? null : n;}
+function slotKey(micro, sid){return micro * 2 + (sid === 'empuje2' ? 1 : 0);}
+function isBilboEx(sid, exId){return BILBO[sid] === exId;}
+// Formato antiguo (snapshots anteriores a la v3): la Bilbo de E1 es el topset
+// que encabeza press_banca.
+function legacyBilboHost(sess){
+  if (!sess || sess.id !== 'empuje1' || sess.exercises.some(ex => ex.id === BILBO.empuje1)) return null;
+  const pb = sess.exercises.find(ex => ex.id === 'press_banca');
+  return pb && pb.sets[0] && pb.sets[0].type === 'topset' ? pb : null;
+}
+function bilboSetOf(sess){
+  if (!sess || !BILBO[sess.id]) return null;
+  const ex = sess.exercises.find(e => e.id === BILBO[sess.id]);
+  if (ex) return ex.sets[0] || null;
+  const host = legacyBilboHost(sess);
+  return host ? host.sets[0] : null;
+}
+// Fases: cycle → (3 ciclos) blockEnd → transition → test → cycle (bloque nuevo).
+// Eventos: transition | test | newCycle{rmRef} | cycle{cycle} | kg{kg}.
+function bilboReplay(){
+  const cfg = APP.bilbo.config;
+  const evs = APP.bilbo.events.map((e, i) => ({e, i, k:slotKey(e.micro, e.sid)}))
+    .sort((a, b) => a.k - b.k || a.i - b.i);
+  let ei = 0;
+  const st = {phase:'cycle', block:1, cycle:1, n:1, rmRef:+cfg.rmRef};
+  st.startKg = r25(st.rmRef * cfg.startPct); st.nextKg = st.startKg;
+  const cycles = [{block:1, cycle:1, rmRef:st.rmRef, pts:[]}];
+  const heavy = [];     // series de transición y test
+  const slots = {};     // 'micro:sid' → estado en esa sesión
+  const newCycle = () => cycles.push({block:st.block, cycle:st.cycle, rmRef:st.rmRef, pts:[]});
+  const apply = e => {
+    if (e.type === 'transition'){ st.phase = 'transition'; st.n = 1; st.nextKg = r25(st.rmRef * cfg.transitionPct); }
+    else if (e.type === 'test'){ st.phase = 'test'; st.n = 1; st.nextKg = null; }
+    else if (e.type === 'newCycle'){
+      if (+e.rmRef > 0) st.rmRef = +e.rmRef;
+      st.startKg = r25(st.rmRef * cfg.startPct);
+      st.block++; st.cycle = 1; st.n = 1; st.phase = 'cycle'; st.nextKg = st.startKg; newCycle();
+    }
+    else if (e.type === 'cycle'){
+      st.phase = 'cycle'; st.cycle = Math.max(1, Math.min(cfg.cycles, parseInt(e.cycle) || 1));
+      st.n = 1; st.nextKg = st.startKg; newCycle();
+    }
+    else if (e.type === 'kg' && +e.kg > 0) st.nextKg = +e.kg;
+  };
+  // Objetivo: superar las reps logradas con esa carga en el ciclo anterior
+  const beat = kg => {
+    const prev = cycles[cycles.length - 2];
+    if (st.phase !== 'cycle' || kg == null || !prev) return null;
+    const hit = prev.pts.filter(p => Math.abs(p.kg - kg) < 0.01);
+    return hit.length ? {reps:Math.max(...hit.map(p => p.reps)), block:prev.block, cycle:prev.cycle} : null;
+  };
+  const snap = () => ({phase:st.phase, block:st.block, cycle:st.cycle, n:st.n, rmRef:st.rmRef,
+                       startKg:st.startKg, kg:st.nextKg, beat:beat(st.nextKg)});
+  const visit = (micro, arr, live) => BILBO_SIDS.forEach(sid => {
+    const k = slotKey(micro, sid);
+    while (ei < evs.length && evs[ei].k <= k) apply(evs[ei++].e);
+    const sess = (arr || []).find(s => s.id === sid);
+    const set = bilboSetOf(sess);
+    const a = snap(); a.live = live;
+    slots[micro + ':' + sid] = a;
+    const kg = set ? parseFloat(set.kg) : NaN, reps = set ? repsOf(set.reps) : null;
+    if (!set || !set.done || !(kg > 0) || reps == null){ a.pending = true; return; }
+    const pt = {kg, reps, micro, sid};
+    a.done = pt;
+    if (st.phase === 'cycle'){
+      cycles[cycles.length - 1].pts.push(pt);
+      if (reps >= cfg.threshold){ st.nextKg = +(kg + cfg.step).toFixed(2); st.n++; }
+      else if (st.cycle < cfg.cycles){ a.endCycle = true; st.cycle++; st.n = 1; st.nextKg = st.startKg; newCycle(); }
+      else { a.endCycle = a.endBlock = true; st.phase = 'blockEnd'; st.nextKg = null; }
+    } else if (st.phase === 'transition'){
+      heavy.push(Object.assign({phase:'transition'}, pt));
+      st.nextKg = reps >= cfg.transitionReps ? +(kg + cfg.step).toFixed(2) : kg; st.n++;
+    } else if (st.phase === 'test'){
+      heavy.push(Object.assign({phase:'test'}, pt)); st.n++;
+    }
+  });
+  (APP.snapshots || []).slice().sort((a, b) => a.microNum - b.microNum)
+    .forEach(sn => visit(sn.microNum, sn.sessions, false));
+  visit(APP.microNum, sessions, true);
+  while (ei < evs.length) apply(evs[ei++].e);
+  return {cfg, slots, cycles, heavy, next:snap()};
+}
+// Solo en transición y test cuenta la Bilbo como press banca normal
+function bilboCounts(micro, sid, R){
+  const a = (R || bilboReplay()).slots[micro + ':' + sid];
+  return !!a && (a.phase === 'transition' || a.phase === 'test');
+}
+// Primera sesión Bilbo pendiente: ahí se anclan los eventos que crea la tarjeta
+function bilboNextSlot(){
+  for (const sid of BILBO_SIDS){
+    const set = bilboSetOf(sessions.find(s => s.id === sid));
+    if (set && !set.done) return {micro:APP.microNum, sid};
+  }
+  return {micro:APP.microNum + 1, sid:'empuje1'};
+}
+// Relleno: la serie Bilbo pendiente toma la carga sugerida, no la del micro
+// anterior. Solo se llama en momentos concretos (migración, cierre de micro,
+// serie Bilbo marcada, evento) para no pisar una edición a mano. `skipSid` es
+// la sesión que el usuario acaba de tocar: nunca se rellena, o desmarcar por
+// error una Bilbo hecha le borraría los kg y reps reales.
+function bilboRefill(skipSid){
+  const R = bilboReplay(); let changed = false;
+  BILBO_SIDS.forEach(sid => {
+    if (sid === skipSid) return;
+    const sess = sessions.find(s => s.id === sid); if (!sess) return;
+    const ex = sess.exercises.find(e => e.id === BILBO[sid]);
+    const set = ex && ex.sets[0]; if (!set || set.done) return;
+    const a = R.slots[APP.microNum + ':' + sid]; if (!a || a.kg == null) return;
+    const reps = a.phase === 'cycle' ? (a.beat ? a.beat.reps + 1 : R.cfg.threshold)
+               : a.phase === 'transition' ? R.cfg.transitionReps : set.reps;
+    if (set.kg !== a.kg || set.reps !== reps){ set.kg = a.kg; set.reps = reps; changed = true; }
+  });
+  return changed;
+}
+
+// ── COMPARACIONES SIN BILBO ────────────────────────────────────
+// Flechas y saldo comparan series de trabajo: la Bilbo en fase de ciclo queda
+// fuera, y en press_banca formato antiguo se quita el topset incrustado para
+// comparar back-off contra back-off en vez de por índice.
+// Devuelve {sets, off} (off = series iniciales omitidas) o null si no compara.
+function comparable(sess, ex, micro, R){
+  if (isBilboEx(sess.id, ex.id)) return bilboCounts(micro, sess.id, R) ? {sets:ex.sets, off:0} : null;
+  if (legacyBilboHost(sess) === ex) return {sets:ex.sets.slice(1), off:1};
+  return {sets:ex.sets, off:0};
+}
+function comparablePrev(prevMap, sid, exId, micro, R){
+  const p = prevMap && prevMap[exId];
+  if (!Array.isArray(p)) return [];
+  if (isBilboEx(sid, exId)) return bilboCounts(micro, sid, R) ? p : [];
+  if (exId === 'press_banca' && !prevMap[BILBO.empuje1] && p[0] && p[0].type === 'topset') return p.slice(1);
+  return p;
+}
+// Clase de comparación de cada serie ('' = sin comparar)
+function setCmpClasses(sess, ex, micro, prevMap, R){
+  const c = comparable(sess, ex, micro, R);
+  if (!c) return ex.sets.map(() => '');
+  const prev = comparablePrev(prevMap, sess.id, ex.id, micro - 1, R);
+  return ex.sets.map((s, i) => i < c.off ? '' : cmpSet(s, prev[i - c.off]));
+}
+
 // ── NAV ────────────────────────────────────────────────────────
 function showPage(p){
   document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
@@ -1240,9 +1411,9 @@ function renderMicroSub(){
 function renderStats(){
   const bar = document.getElementById('stats-bar');
   let ups=0, downs=0;
+  const R = bilboReplay();
   sessions.forEach(s => s.exercises.forEach(ex => {
-    const prev = APP.prevMicro ? APP.prevMicro[ex.id]||[] : [];
-    ex.sets.forEach((set,i) => {const r=cmpSet(set,prev[i]); if(r==='up')ups++; if(r==='down')downs++;});
+    setCmpClasses(s, ex, APP.microNum, APP.prevMicro, R).forEach(r => {if(r==='up')ups++; if(r==='down')downs++;});
   }));
   const logArr = Object.values(APP.log);
   const ws = logArr.map(l=>l.w).filter(Boolean);
@@ -1281,6 +1452,7 @@ function renderSessions(){
     sessionsRendered = true;
   }
   cont.innerHTML = '';
+  const R = bilboReplay();
   SCHEDULE.forEach(sid => {
     if (sid === 'rest') {
       const r = document.createElement('div'); r.className = 'rest-block';
@@ -1288,42 +1460,236 @@ function renderSessions(){
       cont.appendChild(r); return;
     }
     const sess = sessions.find(s => s.id===sid); if (!sess) return;
-    let totalSets = 0, doneSets = 0;
-    const exRows = sess.exercises.map((ex, ei) => {
-      const prev = APP.prevMicro ? APP.prevMicro[ex.id]||[] : [];
-      const exDone = ex.sets.filter(s=>s.done).length;
-      totalSets += ex.sets.length; doneSets += exDone;
-      const pills = ex.sets.map((set, si) => {
-        const c = cmpSet(set, prev[si]);
-        const kstr = set.kg!=null ? set.kg+' kg' : 'BW';
-        const tstr = set.type ? `<span class="tp">${set.type}</span>` : '';
-        return `<div class="set-pill ${c}${set.done?' done':''}">
-          <span class="pill-tap" onclick="openEdit('${sid}',${ei})"><span class="kg">${kstr}</span><span class="rp">× ${set.reps}</span>${tstr}</span>
-          <button class="set-check" onclick="toggleSetDone('${sid}',${ei},${si},event)" aria-label="Serie hecha">&#10003;</button>
-        </div>`;
-      }).join('');
-      const musc = ex.muscle && ex.muscle!=='Sin clasificar' ? `<span class="ex-musc">${ex.muscle}</span>` : '';
-      return `<div class="exercise${exDone===ex.sets.length&&ex.sets.length?' ex-done':''}">
-        <div class="ex-name">${esc(ex.name)}${musc}</div>
-        ${ex.obs?`<div class="ex-obs">${esc(ex.obs)}</div>`:''}
-        <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})">&#9999;&#65039;</button></div>
-        <div class="ex-rir">RIR ${ex.rir} · ${ex.sets.length} series</div>
-      </div>`;
-    }).join('');
-    const pct = totalSets ? Math.round(doneSets/totalSets*100) : 0;
-    const d = document.createElement('div');
-    d.className = 'session' + kindClass(sid) + (openIds['sess-'+sid] ? ' open' : '') + (doneSets&&doneSets===totalSets ? ' sess-complete' : '');
-    d.id = 'sess-'+sid;
-    d.innerHTML = `<div class="session-hdr" onclick="this.parentElement.classList.toggle('open')">
-      <div><div class="sname">${sess.name}</div><div class="stag">${sess.tag}</div></div>
-      <div class="hdr-right">
-        <div class="sess-prog${doneSets?' on':''}">${doneSets}/${totalSets}</div>
-        <div class="schev">&#9662;</div>
-      </div></div>
-      <div class="sess-progbar"><div class="sess-progfill" style="width:${pct}%"></div></div>
-      <div class="session-body">${exRows}</div>`;
-    cont.appendChild(d);
+    cont.appendChild(sessionEl(sess, openIds, R));
   });
+  // Sesiones extra (tobillo): fuera del orden del split, una vez por micro
+  const extras = sessions.filter(s => s.extra);
+  if (extras.length){
+    const l = document.createElement('div'); l.className = 'sec-label';
+    l.textContent = 'Extra · 1 vez por micro'; cont.appendChild(l);
+    extras.forEach(sess => cont.appendChild(sessionEl(sess, openIds, R)));
+  }
+}
+function setPill(sid, ei, si, set, c, unit){
+  const kstr = set.kg!=null ? set.kg+' kg' : 'BW';
+  const tstr = set.type ? `<span class="tp">${set.type}</span>` : '';
+  return `<div class="set-pill ${c}${set.done?' done':''}">
+    <span class="pill-tap" onclick="openEdit('${sid}',${ei})"><span class="kg">${kstr}</span><span class="rp">× ${esc(set.reps)}${unit==='s'?' s':''}</span>${tstr}</span>
+    <button class="set-check" onclick="toggleSetDone('${sid}',${ei},${si},event)" aria-label="Serie hecha">&#10003;</button>
+  </div>`;
+}
+function sessionEl(sess, openIds, R){
+  const sid = sess.id;
+  let totalSets = 0, doneSets = 0;
+  const exRows = sess.exercises.map((ex, ei) => {
+    const exDone = ex.sets.filter(s=>s.done).length;
+    totalSets += ex.sets.length; doneSets += exDone;
+    if (isBilboEx(sid, ex.id)) return bilboCard(sess, ex, ei, R);
+    const cls = setCmpClasses(sess, ex, APP.microNum, APP.prevMicro, R);
+    const pills = ex.sets.map((set, si) => setPill(sid, ei, si, set, cls[si], ex.unit)).join('');
+    const musc = ex.muscle && ex.muscle!=='Sin clasificar' ? `<span class="ex-musc">${ex.muscle}</span>` : '';
+    return `<div class="exercise${exDone===ex.sets.length&&ex.sets.length?' ex-done':''}">
+      <div class="ex-name">${esc(ex.name)}${musc}</div>
+      ${ex.obs?`<div class="ex-obs">${esc(ex.obs)}</div>`:''}
+      <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})">&#9999;&#65039;</button></div>
+      <div class="ex-rir">RIR ${ex.rir} · ${ex.sets.length} series</div>
+    </div>`;
+  }).join('');
+  const pct = totalSets ? Math.round(doneSets/totalSets*100) : 0;
+  const status = !sess.extra ? ''
+    : doneSets && doneSets===totalSets ? ' · <b class="ext-ok">Hecho &#10003;</b>'
+    : doneSets ? ' · <b class="ext-mid">En curso</b>' : ' · <b class="ext-no">Pendiente</b>';
+  const d = document.createElement('div');
+  d.className = 'session' + kindClass(sid) + (openIds['sess-'+sid] ? ' open' : '') + (doneSets&&doneSets===totalSets ? ' sess-complete' : '');
+  d.id = 'sess-'+sid;
+  d.innerHTML = `<div class="session-hdr" onclick="this.parentElement.classList.toggle('open')">
+    <div><div class="sname">${esc(sess.name)}</div><div class="stag">${esc(sess.tag)}${status}</div></div>
+    <div class="hdr-right">
+      <div class="sess-prog${doneSets?' on':''}">${doneSets}/${totalSets}</div>
+      <div class="schev">&#9662;</div>
+    </div></div>
+    <div class="sess-progbar"><div class="sess-progfill" style="width:${pct}%"></div></div>
+    <div class="session-body">${sess.obs?`<div class="sess-obs">${esc(sess.obs)}</div>`:''}${exRows}</div>`;
+  return d;
+}
+
+// ── TARJETA BILBO ──────────────────────────────────────────────
+function bilboPhaseLabel(a, cfg){
+  if (a.phase === 'cycle') return `Bloque ${a.block} · Ciclo ${a.cycle} de ${cfg.cycles} · Sesión ${a.n}`;
+  if (a.phase === 'blockEnd') return `Bloque ${a.block} completado`;
+  if (a.phase === 'transition') return `Transición · sesión ${a.n} de ${cfg.transitionSessions}`;
+  return 'Test de RM';
+}
+function bilboCard(sess, ex, ei, R){
+  const sid = sess.id, cfg = R.cfg, set = ex.sets[0];
+  const a = R.slots[APP.microNum + ':' + sid] || R.next;
+  let sug = '—', obj = '—', objSub = '';
+  if (a.phase === 'cycle'){
+    sug = a.kg;
+    obj = a.beat ? '&gt; ' + a.beat.reps : '&ge; ' + cfg.threshold;
+    objSub = a.beat ? `con ${a.kg} kg en ciclo ${a.beat.cycle}` : `para subir ${cfg.step} kg`;
+  } else if (a.phase === 'transition'){
+    sug = a.kg; obj = '3–5'; objSub = `RIR 1–2 · ${cfg.transitionReps} reps → +${cfg.step} kg`;
+  } else if (a.phase === 'test'){
+    obj = 'RM'; objSub = `referencia actual ${a.rmRef} kg`;
+  } else {
+    objSub = 'Confirma la transición para seguir';
+  }
+  let res = '';
+  if (a.done){
+    const p = a.done;
+    res = `Hecha ${p.kg} × ${p.reps}` + (a.endBlock ? ' · <b>fin del bloque</b>' : a.endCycle ? ' · <b>fin de ciclo</b>, vuelve a ' + a.startKg + ' kg'
+      : a.phase === 'cycle' ? ` · siguiente ${+(p.kg + cfg.step).toFixed(2)} kg` : '');
+  }
+  // Los botones van en la tarjeta de la próxima Bilbo pendiente; con las dos
+  // hechas, en la de E2 y valen para el micro siguiente.
+  const ns = bilboNextSlot();
+  const here = ns.micro === APP.microNum ? ns.sid === sid : sid === 'empuje2';
+  let acts = '';
+  if (here){
+    const n = ns.micro === APP.microNum ? R.slots[ns.micro + ':' + ns.sid] : R.next;
+    if (n.phase === 'blockEnd')
+      acts += `<button class="bilbo-btn primary" onclick="bilboConfirm('transition')">Empezar transición</button>`;
+    if (n.phase === 'transition')
+      acts += `<button class="bilbo-btn${n.n > cfg.transitionSessions ? ' primary' : ''}" onclick="bilboConfirm('test')">Pasar a test</button>`;
+    if (n.phase === 'test')
+      acts += `<input class="bilbo-rm" id="bilbo-rm" type="text" inputmode="decimal" value="${bilboTestRM(R) || ''}" placeholder="RM kg"/>`
+            + `<button class="bilbo-btn primary" onclick="bilboConfirm('newCycle')">Nuevo ciclo con este RM</button>`;
+    if (ns.micro !== APP.microNum)
+      res += `<div class="bilbo-next">Próximo micro: ${bilboPhaseLabel(n, cfg)}${n.kg != null ? ' · ' + n.kg + ' kg' : ''}</div>`;
+  }
+  acts += `<button class="bilbo-btn" onclick="openBilboFix()">Corregir</button>`
+        + `<button class="bilbo-btn" onclick="openBilboChart()">Ver ciclos</button>`;
+  const pills = set ? setPill(sid, ei, 0, set, '', ex.unit) : '';
+  return `<div class="exercise bilbo-row"><div class="bilbo">
+    <div class="bilbo-top"><span class="bilbo-tag">Serie Bilbo</span><span class="bilbo-phase">${bilboPhaseLabel(a, cfg)}</span></div>
+    <div class="bilbo-grid">
+      <div><div class="dlabel">Carga sugerida</div><div class="bilbo-val">${sug}${sug !== '—' ? '<small>kg</small>' : ''}</div></div>
+      <div><div class="dlabel">Objetivo</div><div class="bilbo-val">${obj}${obj !== '—' && obj !== 'RM' ? '<small>reps</small>' : ''}</div>
+        <div class="dsub">${objSub}</div></div>
+    </div>
+    <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})">&#9999;&#65039;</button></div>
+    ${res ? `<div class="bilbo-res">${res}</div>` : ''}
+    <div class="bilbo-acts">${acts}</div>
+  </div></div>`;
+}
+// RM propuesto en el test: mejor e1RM de las series de la fase de test en curso
+function bilboTestRM(R){
+  let best = null;
+  for (let i = R.heavy.length - 1; i >= 0 && R.heavy[i].phase === 'test'; i--){
+    const p = R.heavy[i], e = p.reps === 1 ? p.kg : +e1rm(p.kg, p.reps).toFixed(1);
+    if (best == null || e > best) best = e;
+  }
+  return best;
+}
+function bilboEvent(ev){
+  const ns = bilboNextSlot();
+  APP.bilbo.events.push(Object.assign({micro:ns.micro, sid:ns.sid, at:new Date().toISOString()}, ev));
+  bilboRefill(); save(); invalidateAnalytics(); renderSessions(); renderStats();
+}
+function bilboConfirm(type){
+  const cfg = APP.bilbo.config;
+  if (type === 'transition'){
+    if (!confirm(`Empezar la transición: ${cfg.transitionSessions} sesiones con una serie pesada de 3–5 reps a RIR 1–2, desde ${r25(bilboReplay().next.rmRef * cfg.transitionPct)} kg.`)) return;
+    bilboEvent({type:'transition'}); showToast('Transición iniciada ✓');
+  } else if (type === 'test'){
+    if (!confirm('Pasar a la fase de test de RM?')) return;
+    bilboEvent({type:'test'}); showToast('Fase de test ✓');
+  } else if (type === 'newCycle'){
+    const rm = parseFloat(String((document.getElementById('bilbo-rm')||{}).value||'').replace(',','.'));
+    if (!(rm > 0)){ showToast('Introduce el RM en kg'); return; }
+    if (!confirm(`Nuevo RM de referencia: ${rm} kg → carga de inicio ${r25(rm * cfg.startPct)} kg. ¿Empezar el ciclo 1?`)) return;
+    bilboEvent({type:'newCycle', rmRef:rm}); showToast('Ciclo 1 iniciado ✓');
+  }
+}
+
+// Corrección manual: carga de la próxima Bilbo, fase, RM y sesiones de transición
+function openBilboFix(){
+  const R = bilboReplay(), cfg = R.cfg, ns = bilboNextSlot();
+  const n = ns.micro === APP.microNum ? R.slots[ns.micro + ':' + ns.sid] : R.next;
+  const sname = (SESS_META[ns.sid]||{}).name || ns.sid;
+  const evs = APP.bilbo.events;
+  const last = evs[evs.length - 1];
+  const evTxt = e => ({transition:'transición', test:'test', newCycle:'nuevo ciclo (RM ' + e.rmRef + ' kg)',
+                       cycle:'fase → ciclo ' + e.cycle, kg:'carga → ' + e.kg + ' kg'}[e.type] || e.type) + ` · M${e.micro} ${(SESS_META[e.sid]||{}).name||e.sid}`;
+  document.getElementById('exd-name').textContent = 'Corregir serie Bilbo';
+  document.getElementById('exd-sub').textContent = `Se aplica desde M${ns.micro} · ${sname} · ahora: ${bilboPhaseLabel(n, cfg)}`;
+  document.getElementById('exd-body').innerHTML = `
+    <div class="ed-sublabel">Carga sugerida</div>
+    <div class="goal-row"><input class="goal-inp" id="bf-kg" type="text" inputmode="decimal" value="${n.kg != null ? n.kg : ''}"/>
+      <button class="goal-save" onclick="bilboFix('kg')">Fijar</button></div>
+    <div class="ed-sublabel">Fase</div>
+    <div class="goal-row"><select class="ed-sel" id="bf-phase">
+      ${Array.from({length:cfg.cycles}, (_, i) => `<option value="c${i+1}">Ciclo ${i+1} (bloque ${n.block})</option>`).join('')}
+      <option value="transition">Transición</option><option value="test">Test de RM</option></select>
+      <button class="goal-save" onclick="bilboFix('phase')">Aplicar</button></div>
+    <div class="ed-sublabel">Nuevo bloque con RM de referencia (kg)</div>
+    <div class="goal-row"><input class="goal-inp" id="bf-rm" type="text" inputmode="decimal" value="${n.rmRef}"/>
+      <button class="goal-save" onclick="bilboFix('rm')">Aplicar</button></div>
+    <div class="ed-sublabel">Sesiones de transición</div>
+    <div class="goal-row"><input class="goal-inp" id="bf-tn" type="number" min="1" max="12" value="${cfg.transitionSessions}"/>
+      <button class="goal-save" onclick="bilboFix('tn')">Guardar</button></div>
+    <div class="ed-sublabel">Último ajuste</div>
+    <div class="goal-row"><span class="goal-eta" style="flex:1;margin:0">${last ? esc(evTxt(last)) : 'Ninguno'}</span>
+      ${last ? `<button class="goal-save" style="background:var(--surface3);color:var(--text)" onclick="bilboFix('undo')">Deshacer</button>` : ''}</div>
+    <div class="ed-hint">Los kg y reps hechos se corrigen tocando la serie, como cualquier otra. Estos ajustes quedan anotados en el micro y la sesión indicados arriba.</div>`;
+  document.getElementById('ex-detail').classList.add('open');
+}
+function bilboFix(what){
+  const num = id => parseFloat(String(document.getElementById(id).value).replace(',','.'));
+  if (what === 'kg'){ const kg = num('bf-kg'); if (!(kg > 0)) return showToast('Carga no válida'); bilboEvent({type:'kg', kg}); }
+  else if (what === 'phase'){
+    const v = document.getElementById('bf-phase').value;
+    bilboEvent(v[0] === 'c' ? {type:'cycle', cycle:parseInt(v.slice(1))} : {type:v});
+  }
+  else if (what === 'rm'){ const rm = num('bf-rm'); if (!(rm > 0)) return showToast('RM no válido'); bilboEvent({type:'newCycle', rmRef:rm}); }
+  else if (what === 'tn'){
+    const t = parseInt(document.getElementById('bf-tn').value); if (!(t >= 1)) return showToast('Valor no válido');
+    APP.bilbo.config.transitionSessions = t; bilboRefill(); save(); renderSessions();
+  }
+  else if (what === 'undo'){
+    if (!confirm('¿Deshacer el último ajuste de la serie Bilbo?')) return;
+    APP.bilbo.events.pop(); bilboRefill(); save(); invalidateAnalytics(); renderSessions(); renderStats();
+  }
+  closeOverlay('ex-detail'); showToast('Serie Bilbo ajustada ✓');
+}
+
+// Reps frente a carga, un trazo por ciclo
+const CYCLE_COLORS = ['#c8f060','#60d0f0','#f0b040','#b060f0','#4cdb7a','#f0565b'];
+function openBilboChart(){
+  const R = bilboReplay(), cfg = R.cfg;
+  const cyc = R.cycles.filter(c => c.pts.length);
+  document.getElementById('exd-name').textContent = 'Serie Bilbo · ciclos';
+  document.getElementById('exd-sub').textContent = `Reps frente a carga · umbral ${cfg.threshold} reps · RM ref ${R.next.rmRef} kg`;
+  const body = document.getElementById('exd-body');
+  if (!cyc.length && !R.heavy.length){
+    body.innerHTML = '<div class="empty"><b>Sin series Bilbo hechas</b>Aparecen al marcar la serie como hecha.</div>';
+    document.getElementById('ex-detail').classList.add('open'); return;
+  }
+  body.innerHTML = `<div class="chart-wrap" style="height:210px"><canvas id="exd-chart"></canvas></div>
+    <table class="hist-table" style="margin-top:10px">${cyc.map((c, i) => {
+      const f = c.pts[0], l = c.pts[c.pts.length - 1];
+      return `<tr><td class="mnum" style="width:58px;color:${CYCLE_COLORS[i % CYCLE_COLORS.length]}">B${c.block}·C${c.cycle}</td>
+        <td>${c.pts.length} series · ${f.kg} → ${l.kg} kg</td><td style="text-align:right">últ. ${l.kg}×${l.reps}</td></tr>`;}).join('')}
+      ${R.heavy.length ? `<tr><td class="mnum">Pesadas</td><td colspan="2">${R.heavy.map(p => p.kg + '×' + p.reps).join(' · ')}</td></tr>` : ''}</table>`;
+  document.getElementById('ex-detail').classList.add('open');
+  setTimeout(() => {
+    dChart('exd-chart');
+    const ds = cyc.map((c, i) => ({label:'B' + c.block + '·C' + c.cycle, data:c.pts.map(p => ({x:p.kg, y:p.reps})),
+      borderColor:CYCLE_COLORS[i % CYCLE_COLORS.length], backgroundColor:CYCLE_COLORS[i % CYCLE_COLORS.length],
+      borderWidth:2, pointRadius:3, tension:.2}));
+    if (R.heavy.length) ds.push({label:'Transición/test', data:R.heavy.map(p => ({x:p.kg, y:p.reps})),
+      borderColor:'#9494a6', backgroundColor:'#9494a6', showLine:false, pointRadius:4});
+    const xs = cyc.flatMap(c => c.pts.map(p => p.kg)).concat(R.heavy.map(p => p.kg));
+    ds.push({label:'Umbral', data:[{x:Math.min(...xs), y:cfg.threshold}, {x:Math.max(...xs), y:cfg.threshold}],
+      borderColor:'rgba(240,86,91,.6)', borderDash:[5,4], borderWidth:1, pointRadius:0});
+    CH['exd-chart'] = new Chart(document.getElementById('exd-chart').getContext('2d'), {type:'line', data:{datasets:ds},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:true, labels:{color:'#5c5c70', font:{size:10}, boxWidth:11, padding:7}},
+          tooltip:{callbacks:{label:c => c.dataset.label + ': ' + c.parsed.x + ' kg × ' + c.parsed.y}}},
+        scales:{x:{...XY.x, type:'linear', title:{display:true, text:'kg', color:'#4a4a5c', font:{size:10}}},
+                y:{...XY.y, title:{display:true, text:'reps', color:'#4a4a5c', font:{size:10}}}}}});
+  }, 40);
 }
 
 // ── EDITAR EJERCICIO ────────────────────────────────────────────
@@ -1412,6 +1778,7 @@ function rmSet(i){EC.sets.splice(i,1); renderMSets();}
 function saveExercise(){
   const sess = sessions.find(s=>s.id===EC.sid);
   sess.exercises[EC.ei].sets = EC.sets.map(s=>({...s}));
+  if (isBilboEx(EC.sid, sess.exercises[EC.ei].id)) bilboRefill(EC.sid);
   save(); invalidateAnalytics(); closeOverlay('edit-modal'); renderSessions(); renderStats(); renderCal(); showToast('Guardado ✓');
 }
 
@@ -1421,6 +1788,8 @@ function toggleSetDone(sid, ei, si, evt){
   const sess = sessions.find(s=>s.id===sid); if (!sess) return;
   const set = sess.exercises[ei].sets[si]; if (!set) return;
   markDone(set, !set.done);
+  // Marcar la Bilbo de E1 cambia la sugerencia de la de E2
+  if (isBilboEx(sid, sess.exercises[ei].id)){ bilboRefill(sid); invalidateAnalytics(); }
   save(); renderSessions(); renderCal();
 }
 
@@ -1458,12 +1827,14 @@ function delLog(k){
 // ── CERRAR MICRO ───────────────────────────────────────────────
 function calcBalance(){
   const res = {};
+  const R = bilboReplay();
   sessions.forEach(s => {
     let u=0, d=0;
     s.exercises.forEach(ex => {
-      const prev = APP.prevMicro ? APP.prevMicro[ex.id]||[] : [];
-      const cm = ex.sets.find(st=>st.type!=='dropset')||ex.sets[0];
-      const pm = prev.find ? prev.find(p=>p&&p.type!=='dropset')||prev[0] : prev[0];
+      const c = comparable(s, ex, APP.microNum, R); if (!c) return;
+      const prev = comparablePrev(APP.prevMicro, s.id, ex.id, APP.microNum-1, R);
+      const cm = c.sets.find(st=>st.type!=='dropset')||c.sets[0];
+      const pm = prev.find(p=>p&&p.type!=='dropset')||prev[0];
       if (cm && pm){const r=cmpSet(cm,pm); if(r==='up')u++; if(r==='down')d++;}
     });
     res[s.id] = u - d;
@@ -1504,6 +1875,8 @@ function confirmClose(){
   // La estructura de sesiones se conserva tal cual — incluidos los ejercicios
   // dados de alta o de baja desde el Editor. Los sets ya arrancan con los
   // valores del micro recién cerrado: prevMicro se acaba de construir de ahí.
+  // Excepción: la serie Bilbo arranca con la carga sugerida por el bloque.
+  bilboRefill();
   save(); closeOverlay('close-overlay');
   document.getElementById('so-title').textContent = `Microciclo ${APP.microNum}`;
   document.getElementById('so-cal').value = newCal;
@@ -1544,18 +1917,22 @@ function renderHist(){
     viewMn=hViewMicro; isCurrentView=false;
   }
   const shown = hFilter==='Todos' ? viewSessions : viewSessions.filter(s=>s.name===hFilter);
+  const R = bilboReplay();
   shown.forEach(sess => {
     const lbl = document.createElement('div'); lbl.className='sec-label'+kindClass(sess.id);
     lbl.textContent = sess.name+' · '+sess.tag; cont.appendChild(lbl);
     sess.exercises.forEach(ex => {
       const prev = viewPrev ? viewPrev[ex.id]||[] : [];
+      const cmpCur = comparable(sess, ex, viewMn, R);
+      const cmpPrev = comparablePrev(viewPrev, sess.id, ex.id, viewMn-1, R);
+      const cls = setCmpClasses(sess, ex, viewMn, viewPrev||{}, R);
       let tc='flat', ti='→';
-      if (ex.sets.length&&prev.length){const r=cmpSet(ex.sets[0],prev[0]); if(r==='up'){tc='up';ti='↑';} if(r==='down'){tc='down';ti='↓';}}
+      if (cmpCur&&cmpCur.sets.length&&cmpPrev.length){const r=cmpSet(cmpCur.sets[0],cmpPrev[0]); if(r==='up'){tc='up';ti='↑';} if(r==='down'){tc='down';ti='↓';}}
       const hasPrev = prev.length > 0;
       const prevRow = hasPrev
         ? prev.map(s=>{const k=s.kg!=null?s.kg+'kg':'BW'; return `<span class="mpill">M${viewMn-1}: ${k}×${s.reps}</span>`;}).join('')
         : `<span style="font-size:11px;color:var(--text3)">Primer registro</span>`;
-      const currRow = ex.sets.map((s,i)=>{const c=hasPrev?cmpSet(s,prev[i]):''; const k=s.kg!=null?s.kg+'kg':'BW'; return `<span class="mpill ${c}">M${viewMn}: ${k}×${s.reps}${s.type?' '+s.type:''}</span>`;}).join('');
+      const currRow = ex.sets.map((s,i)=>{const c=hasPrev?cls[i]:''; const k=s.kg!=null?s.kg+'kg':'BW'; return `<span class="mpill ${c}">M${viewMn}: ${k}×${s.reps}${s.type?' '+s.type:''}</span>`;}).join('');
       const div = document.createElement('div'); div.className='hist-ex';
       div.innerHTML = `<div class="hist-ex-hdr">
         <span class="hex-name">${ex.name}</span>
@@ -1811,14 +2188,29 @@ let EXHIST = null;
 function exerciseHistory(force){
   if (EXHIST && !force) return EXHIST;
   const h = {};
+  const R = bilboReplay();
+  // La Bilbo en fase de ciclo no entra en el e1RM (ni en avances ni estancados);
+  // en transición y test cuenta como press banca, venga de E1 o de E2.
   const add = (micro, arr, live) => {
+    const bucket = {};
     (arr||[]).forEach(s => (s.exercises||[]).forEach(ex => {
-      const e = h[ex.id] || (h[ex.id] = {id:ex.id, name:ex.name, muscle:'Sin clasificar', sid:s.id, points:[]});
-      e.name = ex.name; e.sid = s.id;
-      if (ex.muscle) e.muscle = ex.muscle;
-      const st = setStats(ex.sets);
-      if (st) e.points.push(Object.assign({m:micro, live:!!live}, st));
+      let id = ex.id, sets = ex.sets || [], own = true;
+      if (isBilboEx(s.id, ex.id)){
+        if (!bilboCounts(micro, s.id, R)) return;
+        id = 'press_banca'; own = false;
+      } else if (legacyBilboHost(s) === ex && !bilboCounts(micro, s.id, R)) sets = sets.slice(1);
+      const b = bucket[id] || (bucket[id] = {sets:[], meta:null});
+      b.sets = b.sets.concat(sets);
+      if (own) b.meta = {name:ex.name, muscle:ex.muscle, sid:s.id};
     }));
+    Object.keys(bucket).forEach(id => {
+      const b = bucket[id], m = b.meta;
+      const e = h[id] || (h[id] = {id, name:m ? m.name : 'Press banca', muscle:m && m.muscle ? m.muscle : 'Pecho',
+                                   sid:m ? m.sid : 'empuje1', points:[]});
+      if (m){ e.name = m.name; e.sid = m.sid; if (m.muscle) e.muscle = m.muscle; }
+      const st = setStats(b.sets);
+      if (st) e.points.push(Object.assign({m:micro, live:!!live}, st));
+    });
   };
   (APP.snapshots||[]).slice().sort((a,b)=>a.microNum-b.microNum)
     .forEach(sn => add(sn.microNum, sn.sessions));
@@ -2023,36 +2415,57 @@ function saveSessionTag(){
 }
 
 // ── VOLUMEN POR GRUPO MUSCULAR ─────────────────────────────────
-function computeMuscleVolume(){
+// onlyDone: cuenta solo series hechas (micro cerrado); si no, las prescritas.
+function computeMuscleVolume(sessArr, onlyDone){
   const totals = {};
-  sessions.forEach(s => s.exercises.forEach(ex => {
+  (sessArr||[]).forEach(s => (s.exercises||[]).forEach(ex => {
     const m = ex.muscle || 'Sin clasificar';
-    totals[m] = (totals[m]||0) + ex.sets.length;
+    totals[m] = (totals[m]||0) + (onlyDone ? ex.sets.filter(st => st.done).length : ex.sets.length);
   }));
   // El ciclo no es semanal: se normaliza a series/semana con la longitud real
   const weeklyFactor = 7 / SCHEDULE.length;
   Object.keys(totals).forEach(m => totals[m] = +(totals[m]*weeklyFactor).toFixed(1));
   return totals;
 }
+// Volumen principal: series hechas del último micro cerrado. Las prescritas del
+// micro en curso van al lado como referencia. Sin micro cerrado con series
+// marcadas, la principal pasa a ser la prescrita.
+function lastClosedSnapshot(){
+  return (APP.snapshots||[]).slice().sort((a,b)=>b.microNum-a.microNum)[0] || null;
+}
+function muscleVolumeData(){
+  const snap = lastClosedSnapshot();
+  const anyDone = snap && snap.sessions.some(s => s.exercises.some(ex => ex.sets.some(st => st.done)));
+  const presc = computeMuscleVolume(sessions, false);
+  return anyDone
+    ? {totals:computeMuscleVolume(snap.sessions, true), presc, micro:snap.microNum, label:'Hechas M'+snap.microNum}
+    : {totals:presc, presc:null, label:'Prescritas M'+APP.microNum};
+}
 function renderMuscleVolume(){
-  const totals = computeMuscleVolume();
+  const V = muscleVolumeData(), totals = V.totals;
   const withMev = MUSCLE_GROUPS.filter(m => MEV_TABLE[m]);
-  const others  = Object.keys(totals).filter(m => !MEV_TABLE[m] && totals[m] > 0).sort();
+  const others  = Object.keys(totals).concat(Object.keys(V.presc||{}))
+    .filter((m,i,a) => a.indexOf(m)===i && !MEV_TABLE[m] && ((totals[m]||0) > 0 || ((V.presc||{})[m]||0) > 0)).sort();
   const labels  = withMev.concat(others);
   const actual  = labels.map(m => totals[m]||0);
   const mevData = labels.map(m => MEV_TABLE[m]||0);
+  document.getElementById('vol-label').innerHTML = V.presc
+    ? `Series semanales &middot; hechas en M${V.micro} vs MEV orientativo &middot; prescritas M${APP.microNum} de referencia`
+    : `Series semanales &middot; prescritas M${APP.microNum} vs MEV orientativo`;
 
   const wrap = document.getElementById('vol-chart-wrap');
-  wrap.style.height = (labels.length*30 + 30) + 'px';
+  wrap.style.height = (labels.length*(V.presc?36:30) + 30) + 'px';
   dChart('vol-chart');
   CH['vol-chart'] = new Chart(document.getElementById('vol-chart').getContext('2d'),{
     type:'bar',
     data:{labels, datasets:[
-      {label:'Actual', data:actual, borderRadius:3,
+      {label:V.label, data:actual, borderRadius:3,
        backgroundColor:labels.map(m => !MEV_TABLE[m] ? 'rgba(136,136,153,.45)'
          : (totals[m]||0) >= MEV_TABLE[m] ? 'rgba(76,219,122,.6)' : 'rgba(240,86,91,.55)'),
        borderColor:labels.map(m => !MEV_TABLE[m] ? '#5c5c70'
          : (totals[m]||0) >= MEV_TABLE[m] ? '#4cdb7a' : '#f0565b'), borderWidth:1},
+      ...(V.presc ? [{label:'Prescritas M'+APP.microNum, data:labels.map(m => V.presc[m]||0), borderRadius:3,
+       backgroundColor:'rgba(96,208,240,.14)', borderColor:'rgba(96,208,240,.55)', borderWidth:1}] : []),
       {label:'MEV orientativo', data:mevData, borderRadius:3,
        backgroundColor:'rgba(42,42,58,.85)', borderColor:'#33333f', borderWidth:1},
     ]},
@@ -2406,6 +2819,7 @@ function resetTraining(){
   APP.prevMicro = {};
   APP.sessProg  = emptySessProg();
   APP.log = {}; APP.dayCount = 0;
+  APP.bilbo.events = [];   // anclados a micros que dejan de existir
   if (conMetricas){ APP.wHist = []; APP.cHist = []; }
   // Si se conserva la serie de peso, la numeración sigue donde estaba: cada
   // entrada de wHist corresponde a un microciclo cerrado y volver a M1 dejaría
@@ -2429,6 +2843,8 @@ function initMicroPage(){
   renderCal(); renderStats(); renderSessions(); renderLogList();
 }
 
+// Tras migrar a la v3 la Bilbo pendiente toma su carga sugerida
+if (MIGRATED_V3 && bilboRefill()) save();
 initMicroPage();
 registerSW();
 if (MIGRATION_NOTES.length) setTimeout(()=>showToast('Actualizado: ' + MIGRATION_NOTES[MIGRATION_NOTES.length-1]), 600);
