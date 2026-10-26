@@ -746,6 +746,11 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
       <button onclick="exportData()" style="padding:10px 18px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;margin-bottom:10px;width:100%">📋 Copiar datos al portapapeles</button>
       <textarea id="import-area" placeholder="Pega aquí el JSON exportado..." style="width:100%;height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-family:monospace;resize:vertical;outline:none;"></textarea>
       <button onclick="importData()" style="padding:10px 18px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:13px;border:none;cursor:pointer;margin-top:8px;width:100%">Importar y recargar</button>
+      <!-- Sin accept: en iOS un accept con tipos JSON deja los .json en gris en Archivos -->
+      <input type="file" id="import-file" style="display:none" onchange="importFile(this)"/>
+      <button onclick="document.getElementById('import-file').click()" style="padding:10px 18px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;margin-top:8px;width:100%">&#128194; Importar desde archivo (.json)</button>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Antes de importar se valida el archivo, se pide confirmación y el estado actual se guarda en <code>b26v2_backup_preimport</code>.</div>
+      <button onclick="undoImport()" style="padding:10px 18px;border-radius:8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;margin-top:8px;width:100%">&#8630; Deshacer la última importación</button>
       <div style="display:flex;gap:8px;margin-top:14px">
         <button onclick="exportSetsCSV()" style="flex:1;padding:10px 12px;border-radius:9px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer">&#128202; Series CSV</button>
         <button onclick="exportMetricsCSV()" style="flex:1;padding:10px 12px;border-radius:9px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer">&#9878; Peso/kcal CSV</button>
@@ -2044,8 +2049,131 @@ function restoreBackup(){
 function importData(){
   const raw=document.getElementById('import-area').value.trim();
   if (!raw){showToast('Pega el JSON primero');return;}
-  try{JSON.parse(raw); localStorage.setItem('b26v2',raw); showToast('Importado ✓ Recargando...'); setTimeout(()=>location.reload(),800);}
-  catch(e){showToast('JSON inválido');}
+  importText(raw);
+}
+
+// ── IMPORTACIÓN VALIDADA ───────────────────────────────────────
+// Acepta el archivo de exportFile() y también b26v2 a pelo (lo que copia al
+// portapapeles exportData). Comprueba estructura, no valores: un kg raro no
+// rompe la app, una sesión sin `exercises` sí.
+const PREIMPORT_KEY = 'b26v2_backup_preimport';
+const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+function checkSessions(arr, where, err){
+  if (!Array.isArray(arr)){err.push(where+' no es una lista'); return;}
+  arr.forEach((s, i) => {
+    if (!isObj(s) || typeof s.id !== 'string' || !Array.isArray(s.exercises)){
+      err.push(where+'['+i+'] no es una sesión válida'); return;
+    }
+    s.exercises.forEach((ex, j) => {
+      if (!isObj(ex) || typeof ex.id !== 'string' || !Array.isArray(ex.sets) || !ex.sets.every(isObj))
+        err.push(where+'['+i+'].exercises['+j+'] no es un ejercicio válido');
+    });
+  });
+}
+function validateAppData(d){
+  const err = [];
+  if (!isObj(d)) return ['los datos no son un objeto'];
+  if (!Number.isInteger(d.microNum) || d.microNum < 1) err.push('microNum ausente o no válido');
+  if (d.splitVersion !== undefined && !Number.isInteger(d.splitVersion)) err.push('splitVersion no es un entero');
+  if (Number.isInteger(d.splitVersion) && d.splitVersion > SPLIT_VERSION)
+    err.push('datos de un split más nuevo (v'+d.splitVersion+') que esta versión de la app (v'+SPLIT_VERSION+')');
+  if (d.sessions != null) checkSessions(d.sessions, 'sessions', err);
+  if (d.snapshots !== undefined){
+    if (!Array.isArray(d.snapshots)) err.push('snapshots no es una lista');
+    else d.snapshots.forEach((sn, i) => {
+      if (!isObj(sn) || !Number.isInteger(sn.microNum)) err.push('snapshots['+i+'] sin microNum');
+      else checkSessions(sn.sessions, 'snapshots['+i+'].sessions', err);
+    });
+  }
+  ['wHist','cHist'].forEach(k => {
+    if (d[k] !== undefined && !Array.isArray(d[k])) err.push(k+' no es una lista');
+  });
+  ['prevMicro','log','goals','sessProg'].forEach(k => {
+    if (d[k] !== undefined && d[k] !== null && !isObj(d[k])) err.push(k+' no es un objeto');
+  });
+  if (isObj(d.prevMicro) && !Object.values(d.prevMicro).every(Array.isArray))
+    err.push('prevMicro tiene entradas que no son listas de series');
+  if (isObj(d.sessProg) && !Object.values(d.sessProg).every(Array.isArray))
+    err.push('sessProg tiene entradas que no son listas');
+  return err;
+}
+// Devuelve {data, raw, exportedAt} o lanza un Error con el motivo
+function parseBackup(text){
+  let obj;
+  try{ obj = JSON.parse(text); }catch(e){ throw new Error('no es JSON válido'); }
+  if (!isObj(obj)) throw new Error('no es un objeto JSON');
+  let data = obj, exportedAt = null;
+  if ('schemaVersion' in obj || 'storageKey' in obj){
+    if (obj.app !== 'bulk26' || obj.storageKey !== 'b26v2') throw new Error('no es una copia de BULK26');
+    if (!Number.isInteger(obj.schemaVersion) || obj.schemaVersion < 1) throw new Error('schemaVersion no válido');
+    if (obj.schemaVersion > EXPORT_SCHEMA_VERSION)
+      throw new Error('copia hecha con una versión más nueva de la app; actualízala antes de importar');
+    data = obj.data; exportedAt = obj.exportedAt || null;
+  }
+  const err = validateAppData(data);
+  if (err.length) throw new Error(err.slice(0,3).join(' · ') + (err.length>3 ? ' (y '+(err.length-3)+' más)' : ''));
+  return {data, raw: JSON.stringify(data), exportedAt};
+}
+function importText(text){
+  let bk;
+  try{ bk = parseBackup(text); }
+  catch(e){ alert('No se puede importar: ' + e.message + '.\n\nNo se ha modificado nada.'); return; }
+  const cur = localStorage.getItem('b26v2');
+  if (cur === bk.raw){ showToast('Esos datos ya son los actuales'); return; }
+  const d = bk.data, nArch = (d.snapshots||[]).length;
+  const lineas = [
+    'Vas a SUSTITUIR todos los datos actuales por la copia:',
+    '  · Microciclo en curso: M' + d.microNum,
+    '  · ' + nArch + (nArch===1 ? ' microciclo archivado' : ' microciclos archivados'),
+  ];
+  if (bk.exportedAt) lineas.push('  · Exportada el ' + new Date(bk.exportedAt).toLocaleString('es-ES'));
+  if (d.splitVersion !== SPLIT_VERSION)
+    lineas.push('', 'La copia es de un split anterior: al cargar se migrará al actual.');
+  lineas.push('', 'Ahora tienes M' + APP.microNum + ' con ' + (APP.snapshots||[]).length + ' archivados.',
+              'El estado actual se guarda en ' + PREIMPORT_KEY + ' (sustituye a la copia de la importación anterior) y se puede recuperar con «Deshacer la última importación».',
+              '', '¿Importar?');
+  if (!confirm(lineas.join('\n'))) return;
+  writeStore(bk.raw, cur, 'Importado ✓');
+}
+// Guarda `cur` en la key de respaldo y escribe `next` en b26v2, comprobando
+// cada paso. Si algo falla b26v2 queda como estaba.
+function writeStore(next, cur, msg){
+  try{
+    if (cur !== null){
+      localStorage.setItem(PREIMPORT_KEY, cur);
+      if (localStorage.getItem(PREIMPORT_KEY) !== cur) throw new Error();
+    }
+  }catch(e){ alert('No se pudo guardar la copia de respaldo (¿almacenamiento lleno?). No se ha modificado nada.'); return; }
+  try{
+    localStorage.setItem('b26v2', next);
+    if (localStorage.getItem('b26v2') !== next) throw new Error();
+  }catch(e){
+    try{ if (cur !== null) localStorage.setItem('b26v2', cur); }catch(e2){}
+    alert('No se pudo escribir la copia (¿almacenamiento lleno?). Los datos actuales siguen intactos.');
+    return;
+  }
+  // Recarga inmediata: cualquier save() de esta página la machacaría con el
+  // estado viejo. El aviso se muestra ya en la página nueva.
+  try{ sessionStorage.setItem('b26_flash', msg); }catch(e){}
+  location.reload();
+}
+function importFile(input){
+  const f = input.files && input.files[0];
+  input.value = '';   // permite volver a elegir el mismo archivo
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => importText(String(r.result));
+  r.onerror = () => showToast('No se pudo leer el archivo');
+  r.readAsText(f);
+}
+// Intercambia b26v2 y el respaldo: deshacer no tira nada, se puede rehacer.
+function undoImport(){
+  const bk = localStorage.getItem(PREIMPORT_KEY);
+  if (bk === null){ showToast('No hay ninguna importación que deshacer'); return; }
+  let d;
+  try{ d = JSON.parse(bk); }catch(e){ showToast('La copia de respaldo está dañada'); return; }
+  if (!confirm('Volver al estado anterior a la última importación (M' + (d&&d.microNum) + ')?\n\nLo que hay ahora queda en ' + PREIMPORT_KEY + ', así que se puede volver a deshacer.')) return;
+  writeStore(bk, localStorage.getItem('b26v2'), 'Importación deshecha ✓');
 }
 
 // ── PWA ────────────────────────────────────────────────────────
@@ -2178,6 +2306,10 @@ function initMicroPage(){
 initMicroPage();
 registerSW();
 if (MIGRATION_NOTES.length) setTimeout(()=>showToast('Actualizado: ' + MIGRATION_NOTES[MIGRATION_NOTES.length-1]), 600);
+try{
+  const flash = sessionStorage.getItem('b26_flash');
+  if (flash){ sessionStorage.removeItem('b26_flash'); setTimeout(()=>showToast(flash), 300); }
+}catch(e){}
 </script>
 </body>
 </html>
