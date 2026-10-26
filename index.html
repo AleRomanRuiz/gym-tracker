@@ -400,6 +400,13 @@ canvas{width:100%!important;}
   background:var(--accent);color:#08080c;font-size:13px;font-weight:700;
   box-shadow:var(--shadow-lg);transition:opacity .28s var(--ease),transform .28s var(--ease);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Aviso persistente de versión nueva: en la PWA instalada no hay botón de recargar */
+.upd-banner{position:fixed;left:var(--s3);right:var(--s3);bottom:calc(76px + env(safe-area-inset-bottom));
+  z-index:350;display:none;align-items:center;justify-content:space-between;gap:var(--s3);
+  max-width:536px;margin:0 auto;padding:10px 10px 10px var(--s4);border-radius:var(--r-md);
+  background:var(--surface2);border:1px solid rgba(200,240,96,.4);box-shadow:var(--shadow-lg);
+  font-size:13px;font-weight:600;color:var(--text);}
+.upd-banner.show{display:flex;animation:fade .22s var(--ease);}
 
 /* ── Modales ──────────────────────────────────────────────────── */
 .modal-overlay{display:none;position:fixed;inset:0;z-index:200;
@@ -783,6 +790,7 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
       <div class="ed-hint">Antes de borrar se guarda una copia completa en <code>b26v2_backup_prereset</code>, restaurable desde la consola. Aun así, exporta el CSV antes si quieres conservar los datos fuera de la app.</div>
     </div>
   </div>
+  <div id="app-version" style="padding:4px var(--s3) 0;font-size:11px;color:var(--text3);text-align:center"></div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -845,6 +853,10 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="upd-banner" id="upd-banner">
+  <span>Nueva versión disponible</span>
+  <button class="close-btn" onclick="location.reload()">Recargar</button>
+</div>
 
 <script src="./chart.umd.min.js"></script>
 <script>
@@ -2179,18 +2191,41 @@ function undoImport(){
 // ── PWA ────────────────────────────────────────────────────────
 // El service worker solo se registra sobre https o localhost; abriendo el
 // index con file:// la app funciona igual, simplemente sin caché offline.
+// sw.js hace skipWaiting + clients.claim, así que una versión nueva toma el
+// control sola; aquí solo hace falta enterarse y ofrecer la recarga. No se
+// recarga sin preguntar: podría haber un editor de series abierto sin guardar.
 function registerSW(){
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol === 'file:') return;
+  // Sin controlador previo es la primera instalación, no una actualización
+  let hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController) document.getElementById('upd-banner').classList.add('show');
+    hadController = true;
+    showAppVersion();
+  });
   navigator.serviceWorker.register('./sw.js').then(reg => {
-    reg.addEventListener('updatefound', () => {
-      const nuevo = reg.installing; if (!nuevo) return;
-      nuevo.addEventListener('statechange', () => {
-        // controller presente = ya había una versión activa: esto es actualización
-        if (nuevo.state === 'installed' && navigator.serviceWorker.controller)
-          showToast('Nueva versión lista · recarga');
-      });
+    // Por si quedó una versión esperando de antes de que sw.js hiciera skipWaiting
+    if (reg.waiting && navigator.serviceWorker.controller) reg.waiting.postMessage('skipWaiting');
+    // iOS reanuda la PWA desde memoria sin navegar, y sin navegación el
+    // navegador no vuelve a mirar sw.js: se comprueba al volver a primer plano.
+    let lastCheck = Date.now();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible' || Date.now() - lastCheck < 60000) return;
+      lastCheck = Date.now();
+      reg.update().catch(()=>{});
     });
+  }).catch(()=>{});
+  showAppVersion();
+}
+// Versión del shell en caché: sirve para comprobar en el iPhone que un
+// despliegue ha llegado.
+function showAppVersion(){
+  const el = document.getElementById('app-version');
+  if (!el || !window.caches) return;
+  caches.keys().then(ks => {
+    const k = ks.find(k => /^bulk26-.*-shell$/.test(k));
+    el.textContent = k ? 'Versión de la app: ' + k.slice(0, -'-shell'.length) : '';
   }).catch(()=>{});
 }
 
