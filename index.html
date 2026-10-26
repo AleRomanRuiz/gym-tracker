@@ -2,720 +2,618 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>BULK 2026</title>
 <meta name="description" content="Registro de entrenamiento por microciclos: series, progresión de fuerza y volumen por grupo muscular."/>
-<meta name="theme-color" content="#08080c"/>
+<meta name="theme-color" content="#EEF0EE" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#14181C" media="(prefers-color-scheme: dark)"/>
+<meta name="color-scheme" content="light dark"/>
 <link rel="manifest" href="./manifest.webmanifest"/>
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png"/>
-<!-- iOS ignora el manifiesto para el icono y el modo pantalla completa -->
+<!-- iOS ignora el manifiesto para el icono y el modo pantalla completa.
+     status-bar-style se queda en black: iOS lo fija al instalar y cambiarlo
+     obligaría a reinstalar la PWA (ver CLAUDE.md). -->
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
 <meta name="apple-mobile-web-app-title" content="BULK26"/>
 <link rel="apple-touch-icon" href="./apple-touch-icon.png"/>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preload" href="./fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="./fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin/>
 <style>
 /* ════════════════════════════════════════════════════════════════
    BULK26 — sistema de diseño
-   Tokens → primitivas → componentes. El color es información, no
-   decoración: cada tipo de sesión lleva el suyo y se propaga por
-   calendario, tarjetas, histórico y gráficos con una sola variable.
+   Los números mandan: kg y reps en Barlow Condensed, el resto en Barlow y
+   en segundo plano. Un único protagonista, la tarjeta Bilbo, con banda de
+   acento. El color sale siempre de los tokens de :root; el acento queda
+   para la pestaña activa, la confirmación de cada hoja y la Bilbo.
    ════════════════════════════════════════════════════════════════ */
+@font-face{font-family:'Barlow';font-style:normal;font-weight:400;font-display:swap;
+  src:url(./fonts/barlow-latin-400-normal.woff2) format('woff2');}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:500;font-display:swap;
+  src:url(./fonts/barlow-latin-500-normal.woff2) format('woff2');}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:600;font-display:swap;
+  src:url(./fonts/barlow-latin-600-normal.woff2) format('woff2');}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:600;font-display:swap;
+  src:url(./fonts/barlow-condensed-latin-600-normal.woff2) format('woff2');}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:700;font-display:swap;
+  src:url(./fonts/barlow-condensed-latin-700-normal.woff2) format('woff2');}
+
 :root{
-  /* Superficies: escala de elevación, no un solo gris */
-  --bg:#08080c; --surface:#101017; --surface2:#181822; --surface3:#20202c;
-  --border:#24242f; --border-str:#33333f;
-  /* Texto */
-  --text:#eaeaf2; --text2:#9494a6; --text3:#5c5c70;
-  /* Marca y estado */
-  --accent:#c8f060; --accent2:#60d0f0;
-  --up:#4cdb7a; --down:#f0565b; --warn:#f0b040; --mod:#b060f0;
-  /* Tipos de sesión */
-  --push:#c8f060; --pull:#60d0f0; --legs:#f0b040; --arm:#b060f0;
-  /* Ritmo */
-  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:22px; --s6:30px;
-  --r-sm:9px; --r-md:13px; --r-lg:18px; --r-pill:999px;
-  /* Elevación: el brillo superior es lo que da relieve en oscuro */
-  --lift:inset 0 1px 0 rgba(255,255,255,.045);
-  --shadow:0 2px 10px rgba(0,0,0,.35);
-  --shadow-lg:0 10px 34px rgba(0,0,0,.5);
-  --ease:cubic-bezier(.4,0,.2,1);
+  color-scheme:light dark;
+  --bg:#EEF0EE; --surface:#FFFFFF; --ink:#1A1F24; --muted:#5A636B; --line:#D5D9D6;
+  --accent:#C4161C; --up:#1C7C4D; --down:#B4541A;
+  /* Texto sobre relleno de acento: en oscuro el blanco no llega a AA */
+  --on-accent:var(--surface);
+  --scrim:rgb(20 24 28 / .55);
+  /* Matices derivados (sin color-mix el navegador se queda con el fallback) */
+  --tint:var(--bg);
+  --tint:color-mix(in srgb, var(--ink) 7%, var(--surface));
+  --accent-tint:var(--surface);
+  --accent-tint:color-mix(in srgb, var(--accent) 6%, var(--surface));
+  --f-text:'Barlow',system-ui,-apple-system,sans-serif;
+  --f-num:'Barlow Condensed','Barlow',system-ui,-apple-system,sans-serif;
+  /* Radios por jerarquía: chip < control < tarjeta < hoja */
+  --r-chip:6px; --r-ctl:10px; --r-card:14px; --r-sheet:20px;
+  --gut:12px; --tap:44px;
+  --ease:cubic-bezier(.3,0,.2,1);
 }
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#14181C; --surface:#1B2025; --ink:#E8EBE9; --muted:#9AA3A9; --line:#2A3036;
+    --accent:#E5484D; --up:#4CC38A; --down:#E08A4F;
+    --on-accent:var(--bg);
+    --scrim:rgb(0 0 0 / .62);
+  }
+}
+
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;background:var(--bg);color:var(--text);
-  font-family:'Barlow',sans-serif;font-size:15px;line-height:1.45;
-  overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
-body{padding-bottom:env(safe-area-inset-bottom);}
-button,input,select,textarea{font-family:inherit;}
-/* Los números no deben bailar al cambiar de valor */
-.svalue,.dvalue,.tt-label,.stp-inp,.sess-prog,.vol-num,.micro-title,
-.hist-table td,.mpill,.set-pill,.log-vals,.summary-row{font-variant-numeric:tabular-nums;}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+html,body{min-height:100%;background:var(--bg);color:var(--ink);}
+body{font:400 15px/1.45 var(--f-text);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+button,input,select,textarea{font:inherit;color:inherit;}
+button{cursor:pointer;background:none;border:none;}
+b,strong{font-weight:600;}
+code{font:500 .92em ui-monospace,SFMono-Regular,Menlo,monospace;}
+svg.i{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;}
+/* Cifras: condensada y de ancho fijo */
+.num,.svalue,.dvalue,.micro-title,.page-title,.tt-label,.sname,.sess-prog,.bilbo-val,
+.stp-inp,.pill-tap,.mpill,.mnum,.an-delta,.vol-num,.log-vals,.summary-row .val,.cal-day .dlabel{
+  font-family:var(--f-num);font-variant-numeric:tabular-nums;}
+:focus{outline:none;}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:var(--r-chip);}
 
-/* ── Tipografía ───────────────────────────────────────────────── */
-.page-title,.micro-title,.fbox-title,.dvalue,.svalue,.sname,.dash-title,
-.modal-title,.tt-label,.logo,.editor-hdr-title,.stp-inp{
-  font-family:'Barlow Condensed',sans-serif;}
-.dlabel,.slabel,.sec-label,.stag,.mset-n,.mset-lbl,.ed-sublabel,
-.page-sub,.bbot span,.nav-tab{letter-spacing:.09em;text-transform:uppercase;}
+/* ── Controles base ───────────────────────────────────────────── */
+/* Bordes de control en --muted: --line no llega a 3:1 frente a la superficie */
+.inp,.bw-inp,.goal-inp,.ed-sel,.ed-name,.ed-meta select,.ed-meta input,.ed-tagrow input,
+.mset-type,.sfield input,.bilbo-rm,.eq-row input,.import-area{
+  min-height:var(--tap);padding:0 12px;border-radius:var(--r-ctl);
+  border:1px solid var(--muted);background:var(--surface);color:var(--ink);
+  font:400 16px/1.2 var(--f-text);}
+.import-area{width:100%;height:96px;padding:10px 12px;font:400 16px/1.4 ui-monospace,Menlo,monospace;resize:vertical;}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:1;}
+.btn,.bw-btn,.goal-save,.close-btn,.bilbo-btn,.ed-add,.add-set-btn,.rst-btn,.mset-done,.tt-btn{
+  min-height:var(--tap);padding:0 16px;border-radius:var(--r-ctl);
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:600 15px/1 var(--f-text);transition:transform .12s var(--ease);}
+.btn:active,.bw-btn:active,.goal-save:active,.close-btn:active,.bilbo-btn:active,.ed-add:active,
+.add-set-btn:active,.rst-btn:active,.mset-done:active,.tt-btn:active,.stp:active,.set-check:active,
+.pill-tap:active,.cal-day:active{transform:scale(.96);}
+/* Secundario: el botón por defecto */
+.btn-secondary,.goal-save,.close-btn,.bilbo-btn,.tt-btn,.mset-done{
+  background:var(--surface);color:var(--ink);border:1px solid var(--muted);}
+/* Fuerte: acción principal de un bloque, en neutro para no competir con la Bilbo */
+.btn-strong,.bw-btn{background:var(--ink);color:var(--surface);border:1px solid var(--ink);}
+/* Primario: solo la confirmación de cada hoja y la fase de la Bilbo */
+.btn-primary,.bilbo-btn.primary{background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);}
+.btn-block{width:100%;}
+.btn-danger,.rst-btn{background:var(--surface);color:var(--down);border:1px solid var(--down);width:100%;}
+.btn:disabled,.tt-btn:disabled{opacity:.35;cursor:default;transform:none;}
+.hint,.ed-hint{margin-top:8px;font-size:13px;color:var(--muted);line-height:1.5;}
 
-/* ── Chrome superior ──────────────────────────────────────────── */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;
-  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
-  padding:0 var(--s3);background:rgba(8,8,12,.82);
-  backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);
-  border-bottom:1px solid var(--border);}
-.logo{font-weight:900;font-size:21px;letter-spacing:.06em;color:var(--accent);flex:none;line-height:1;}
-.logo span{color:var(--text3);}
-/* Control segmentado: fondo propio, no botones sueltos */
-.nav-tabs{display:flex;gap:2px;padding:3px;border-radius:var(--r-pill);
-  background:var(--surface);border:1px solid var(--border);}
-.nav-tab{padding:5px 10px;border-radius:var(--r-pill);border:none;background:transparent;
-  font-size:10px;font-weight:700;color:var(--text3);cursor:pointer;
-  transition:color .18s var(--ease),background .18s var(--ease);}
-.nav-tab.active{background:var(--accent);color:#08080c;}
-.page{display:none;padding:70px 0 96px;min-height:100vh;}
-.page.active{display:block;animation:fade .22s var(--ease);}
-@keyframes fade{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
+/* ── Cabecera y navegación ────────────────────────────────────── */
+.appbar{padding:calc(env(safe-area-inset-top) + 12px) var(--gut) 0;}
+.logo{font:700 20px/1 var(--f-num);letter-spacing:.02em;color:var(--ink);}
+.logo span{color:var(--muted);}
+.page{display:none;padding:4px 0 calc(96px + env(safe-area-inset-bottom));}
+.page.active{display:block;}
+.bottom-bar{position:fixed;left:0;right:0;bottom:0;z-index:100;display:flex;
+  padding:0 max(6px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(6px, env(safe-area-inset-left));
+  background:var(--surface);border-top:1px solid var(--line);}
+.bbot{position:relative;flex:1;min-height:58px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;color:var(--muted);font:500 12px/1 var(--f-text);}
+.bbot svg{width:22px;height:22px;}
+/* La pestaña activa se marca con una barra de acento (no texto en acento:
+   en oscuro no llegaría a AA) y el rótulo pasa a tinta */
+.bbot.active{color:var(--ink);font-weight:600;}
+.bbot.active::before{content:'';position:absolute;top:0;left:22%;right:22%;height:3px;
+  border-radius:0 0 3px 3px;background:var(--accent);}
 
 /* ── Cabeceras de página ──────────────────────────────────────── */
-.page-header{padding:var(--s5) var(--s3) var(--s3);}
-.page-title{font-weight:900;font-size:34px;letter-spacing:.02em;line-height:1;}
-.page-sub{font-size:10px;font-weight:600;color:var(--text3);margin-top:6px;}
-.micro-header{padding:var(--s5) var(--s3) var(--s3);
-  display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s3);}
-.micro-title{font-weight:900;font-size:34px;letter-spacing:.02em;line-height:1;}
-.micro-sub{font-size:12px;color:var(--text3);margin-top:6px;}
-.micro-sub b{color:var(--text2);font-weight:600;}
-.micro-badge{flex:none;padding:5px 11px;border-radius:var(--r-pill);
-  font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
-  color:var(--accent);background:rgba(200,240,96,.1);border:1px solid rgba(200,240,96,.28);}
-.sec-label{padding:var(--s4) var(--s3) 6px;font-size:10px;font-weight:700;color:var(--text3);}
+.page-header,.micro-header{padding:16px var(--gut) 12px;}
+.page-title,.micro-title{font-weight:700;font-size:34px;line-height:1;}
+.page-sub,.micro-sub{margin-top:6px;font-size:14px;color:var(--muted);}
+.micro-sub b{color:var(--ink);font-weight:600;}
+.sec-label,.dash-title{padding:22px var(--gut) 8px;font:600 17px/1.2 var(--f-text);color:var(--ink);}
+.dash-title{padding:0 0 10px;}
 
 /* ── Calendario del ciclo ─────────────────────────────────────── */
-.calendar-strip{padding:0 var(--s3) var(--s4);}
-.cal-week{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px;}
-.cal-day{position:relative;height:52px;border-radius:var(--r-sm);cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  background:var(--surface);border:1px solid var(--border);box-shadow:var(--lift);
-  transition:transform .16s var(--ease),border-color .16s var(--ease);}
-.cal-day:active{transform:scale(.94);}
-.cal-day .dlabel{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.02em;
-  text-transform:none;margin:0;}
-.cal-day.training{border-color:var(--border-str);}
-.cal-day.training .dlabel{color:var(--text);}
-.cal-day.rest-day{background:transparent;border-style:dashed;border-color:var(--border);}
-.cal-day.rest-day .dlabel{color:var(--text3);}
-.cal-day.done{opacity:.32;}
-/* El día en curso se llena con el color de su sesión */
-.cal-day.current{background:var(--k,var(--accent));border-color:var(--k,var(--accent));
-  box-shadow:0 0 0 3px rgba(200,240,96,.13);}
-.cal-day.current .dlabel{color:#08080c;font-weight:800;}
-/* La marca de tipo es una barra inferior, más legible que un punto a 30px */
-.cdot{width:16px;height:3px;border-radius:2px;}
-.cdot.push{background:var(--push);}.cdot.pull{background:var(--pull);}
-.cdot.legs{background:var(--legs);}.cdot.arm{background:var(--arm);}
-.cdot.rd{background:var(--border-str);}
+/* Los descansos son separadores estrechos para que los días de entreno
+   lleguen a 44 px de ancho a 375 px */
+.calendar-strip{padding:0 var(--gut) 14px;}
+.cal-week{display:grid;gap:0;align-items:center;}
+.cal-day{height:52px;margin:0 1px;border-radius:var(--r-ctl);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;background:var(--surface);color:var(--ink);
+  border:2px solid transparent;transition:transform .12s var(--ease);}
+.cal-day .dlabel{font-size:17px;font-weight:600;line-height:1;margin:0;color:inherit;}
+.cal-day .cnote{font-size:11px;line-height:1;color:var(--muted);}
+.cal-day.done{background:var(--tint);color:var(--muted);}
+.cal-day.current{border-color:var(--ink);}
+.cal-day.current .dlabel{font-weight:700;}
+.cal-rest{display:flex;justify-content:center;}
+.cal-rest::before{content:'';width:2px;height:22px;border-radius:1px;background:var(--line);}
 
-/* ── Tarjetas de métrica ──────────────────────────────────────── */
-.stats-bar{display:flex;gap:var(--s2);padding:0 var(--s3) var(--s3);
-  overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+/* ── Métricas del micro ───────────────────────────────────────── */
+.stats-bar{display:flex;gap:8px;padding:0 var(--gut) 12px;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;}
 .stats-bar::-webkit-scrollbar{display:none;}
-.stat-card{flex:none;min-width:112px;padding:var(--s3) var(--s3) 11px;border-radius:var(--r-md);
-  background:linear-gradient(168deg,var(--surface2),var(--surface));
-  border:1px solid var(--border);box-shadow:var(--lift);}
-.slabel{font-size:9px;font-weight:700;color:var(--text3);margin-bottom:5px;}
-.svalue{font-weight:800;font-size:27px;line-height:1;color:var(--accent);letter-spacing:.01em;}
-.ssub{font-size:11px;color:var(--text3);margin-top:4px;}
+.stat-card{flex:1 0 96px;padding:12px;border-radius:var(--r-card);background:var(--surface);}
+.slabel{font-size:13px;color:var(--muted);margin-bottom:4px;white-space:nowrap;}
+.svalue{font-weight:700;font-size:30px;line-height:1;}
+.svalue.up{color:var(--up);} .svalue.down{color:var(--down);}
+.ssub{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;}
 
-/* ── Aviso de cierre de micro ─────────────────────────────────── */
-.close-banner{margin:0 var(--s3) var(--s3);padding:var(--s3) var(--s4);border-radius:var(--r-md);
-  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
-  background:linear-gradient(140deg,rgba(200,240,96,.09),rgba(200,240,96,.03));
-  border:1px solid rgba(200,240,96,.2);}
-.close-text{font-size:13px;font-weight:600;color:var(--accent);line-height:1.35;}
-.close-text small{display:block;font-size:11px;font-weight:400;color:var(--text3);margin-top:3px;}
-.close-btn{flex:none;padding:10px 15px;border-radius:var(--r-sm);border:none;cursor:pointer;
-  background:var(--accent);color:#08080c;font-weight:700;font-size:12px;white-space:nowrap;
-  transition:transform .14s var(--ease);}
-.close-btn:active{transform:scale(.96);}
+/* ── Cierre de micro ──────────────────────────────────────────── */
+.close-banner{margin:0 var(--gut) 4px;padding:12px 12px 12px 16px;border-radius:var(--r-card);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);}
+.close-text{font-size:15px;font-weight:500;line-height:1.35;}
+.close-text small{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:2px;}
+.close-btn{flex:none;gap:0;}
 
 /* ── Registro diario ──────────────────────────────────────────── */
-.bw-row{display:flex;gap:var(--s2);padding:0 var(--s3) var(--s2);}
-.bw-inp{flex:1;min-width:0;padding:12px var(--s3);border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface);color:var(--text);
-  font-size:16px;outline:none;transition:border-color .16s var(--ease);}
-.bw-inp::placeholder{color:var(--text3);}
-.bw-inp:focus{border-color:var(--accent);}
-.bw-btn{flex:none;padding:12px 17px;border-radius:var(--r-sm);border:none;cursor:pointer;
-  background:var(--accent);color:#08080c;font-weight:700;font-size:14px;}
-.bw-btn:active{transform:scale(.96);}
-.log-list{margin:0 var(--s3) var(--s4);border-radius:var(--r-md);overflow:hidden;
-  background:var(--surface);border:1px solid var(--border);display:none;}
-.log-entry{display:flex;align-items:center;justify-content:space-between;
-  padding:10px var(--s4);border-bottom:1px solid var(--border);}
+.bw-row{display:flex;gap:8px;padding:0 var(--gut) 8px;}
+.bw-inp{flex:1;min-width:0;}
+.bw-inp.kcal{flex:0 0 112px;}
+.bw-btn{flex:none;width:var(--tap);padding:0;}
+.log-list{margin:0 var(--gut) 8px;border-radius:var(--r-card);background:var(--surface);display:none;overflow:hidden;}
+.log-head{padding:10px 16px 2px;font-size:13px;color:var(--muted);}
+.log-entry{display:flex;align-items:center;gap:8px;padding:0 4px 0 16px;border-bottom:1px solid var(--line);}
 .log-entry:last-child{border-bottom:none;}
-.log-day{min-width:32px;font-size:11px;font-weight:700;color:var(--text3);}
-.log-vals{flex:1;display:flex;gap:var(--s3);padding:0 10px;font-size:13px;font-weight:500;}
-.log-w{color:var(--accent);}
-.log-c{color:var(--accent2);}
-.log-del{border:none;background:none;color:var(--text3);cursor:pointer;
-  font-size:15px;padding:3px 7px;border-radius:6px;}
-.log-del:active{color:var(--down);background:rgba(240,86,91,.1);}
+.log-day{min-width:34px;font-size:13px;font-weight:600;color:var(--muted);}
+.log-vals{flex:1;display:flex;gap:14px;font-size:17px;font-weight:600;}
+.log-vals small{font:400 13px var(--f-text);color:var(--muted);margin-left:2px;}
+.log-del,.icon-btn{flex:none;width:var(--tap);height:var(--tap);display:inline-flex;align-items:center;
+  justify-content:center;border-radius:var(--r-ctl);color:var(--muted);}
+.log-del:active,.icon-btn:active{background:var(--tint);}
 
 /* ── Sesiones ─────────────────────────────────────────────────── */
-/* --k es el color del tipo de sesión: lo fija una clase y lo hereda todo */
-.session{--k:var(--text2);position:relative;margin:0 var(--s3) var(--s3);
-  border-radius:var(--r-md);overflow:hidden;background:var(--surface);
-  border:1px solid var(--border);box-shadow:var(--lift);
-  transition:border-color .2s var(--ease);}
-.session.k-push{--k:var(--push);} .session.k-pull{--k:var(--pull);}
-.session.k-legs{--k:var(--legs);} .session.k-arm{--k:var(--arm);}
-.session::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:var(--k);opacity:.55;transition:opacity .2s var(--ease);}
-.session.open{border-color:var(--border-str);}
-.session.open::before{opacity:1;}
-.session-hdr{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
-  padding:var(--s3) var(--s4) var(--s3) 19px;cursor:pointer;background:var(--surface2);}
-.sname{font-weight:700;font-size:19px;letter-spacing:.01em;line-height:1.1;color:var(--k);}
-.stag{font-size:9px;font-weight:600;color:var(--text3);margin-top:3px;}
-.hdr-right{display:flex;align-items:center;gap:10px;flex:none;}
-.sess-prog{padding:3px 9px;border-radius:var(--r-pill);font-size:11px;font-weight:700;
-  color:var(--text3);background:var(--bg);border:1px solid var(--border);}
-.sess-prog.on{color:var(--k);border-color:var(--k);}
-.schev{color:var(--text3);font-size:17px;line-height:1;transition:transform .24s var(--ease);}
+.session{margin:0 var(--gut) 10px;border-radius:var(--r-card);background:var(--surface);overflow:hidden;}
+.session-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-height:64px;padding:10px 8px 10px 16px;cursor:pointer;}
+.sname{font-weight:700;font-size:22px;line-height:1.1;}
+.stag{font-size:13px;color:var(--muted);margin-top:2px;}
+.hdr-right{display:flex;align-items:center;gap:4px;flex:none;}
+.sess-prog{font-size:17px;font-weight:600;color:var(--muted);}
+.sess-prog.on{color:var(--ink);}
+.schev{width:var(--tap);height:var(--tap);display:flex;align-items:center;justify-content:center;
+  color:var(--muted);transition:transform .2s var(--ease);}
 .session.open .schev{transform:rotate(180deg);}
-.sess-progbar{height:2px;background:var(--surface3);}
-.sess-progfill{height:100%;background:var(--k);transition:width .35s var(--ease);}
-.session.sess-complete .session-hdr{background:linear-gradient(90deg,rgba(255,255,255,.03),transparent);}
-.session-body{display:none;}
+.sess-progbar{height:3px;margin:0 16px;background:var(--line);border-radius:2px;overflow:hidden;}
+.sess-progfill{height:100%;background:var(--ink);}
+.session.sess-complete .sname{color:var(--muted);}
+.session-body{display:none;padding-bottom:4px;}
 .session.open .session-body{display:block;}
+.sess-obs{padding:12px 16px 0;font-size:13px;color:var(--muted);line-height:1.5;}
+/* Extra (tobillo): la estructura es información, borde discontinuo y sin relleno */
+.session.extra{background:transparent;border:1.5px dashed var(--muted);}
+.ext-st{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:var(--r-chip);
+  font:600 12px/18px var(--f-text);vertical-align:1px;}
+.ext-no{color:var(--muted);border:1px dashed var(--muted);}
+.ext-mid{color:var(--ink);border:1px solid var(--ink);
+  background:linear-gradient(90deg,var(--tint) 50%,transparent 50%);}
+.ext-ok{color:var(--surface);background:var(--ink);border:1px solid var(--ink);}
 
-.exercise{padding:var(--s3) var(--s4) var(--s3) 19px;border-bottom:1px solid var(--border);
-  transition:opacity .25s var(--ease);}
-.exercise:last-child{border-bottom:none;}
-.exercise.ex-done{opacity:.42;}
-.exercise.ex-done .ex-name{text-decoration:line-through;text-decoration-color:var(--text3);}
-.ex-name{font-size:14.5px;font-weight:500;line-height:1.3;margin-bottom:3px;}
-.ex-musc{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:var(--r-pill);
-  font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-  color:var(--text3);background:var(--surface2);border:1px solid var(--border);
-  vertical-align:1px;}
-.ex-obs{font-size:11.5px;font-style:italic;color:var(--text3);line-height:1.45;margin-bottom:8px;}
-.ex-rir{font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--text3);margin-top:7px;}
+.exercise{padding:14px 16px;border-top:1px solid var(--line);}
+.exercise.ex-done .ex-name{color:var(--muted);}
+.ex-name{font-size:16px;font-weight:500;line-height:1.3;}
+.ex-musc{display:inline-block;margin-left:6px;padding:0 6px;border-radius:var(--r-chip);
+  border:1px solid var(--line);font-size:12px;line-height:18px;color:var(--muted);vertical-align:1px;}
+.ex-obs{margin-top:3px;font-size:13px;color:var(--muted);line-height:1.45;}
+.ex-rir{margin-top:8px;font-size:13px;color:var(--muted);}
+.sets-container{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
 
-/* Píldora de serie: zona de edición + zona de check, separadas */
-.sets-container{display:flex;flex-wrap:wrap;gap:5px;}
-.set-pill{display:flex;align-items:stretch;overflow:hidden;padding-left:11px;
-  border-radius:var(--r-pill);border:1px solid var(--border);background:var(--surface2);
-  font-size:12.5px;font-weight:500;cursor:pointer;
-  transition:border-color .16s var(--ease),background .16s var(--ease);}
-.pill-tap{display:flex;align-items:center;gap:4px;padding:6px 0;}
-.set-pill .kg{font-weight:700;color:var(--text);}
-.set-pill .rp{color:var(--text2);}
-.set-pill .tp{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-  color:var(--text3);margin-left:1px;}
-.set-pill.up{border-color:rgba(76,219,122,.5);background:rgba(76,219,122,.09);}
-.set-pill.up .kg{color:var(--up);}
-.set-pill.down{border-color:rgba(240,86,91,.5);background:rgba(240,86,91,.09);}
-.set-pill.down .kg{color:var(--down);}
-.set-check{display:flex;align-items:center;padding:0 10px;margin-left:3px;cursor:pointer;
-  border:none;border-left:1px solid var(--border);background:transparent;
-  color:var(--text3);font-size:12px;line-height:1;transition:all .16s var(--ease);}
-.set-pill.done{background:rgba(200,240,96,.14);border-color:rgba(200,240,96,.55);}
-.set-pill.done .kg{color:var(--accent);}
-.set-pill.done .set-check{color:#08080c;background:var(--accent);border-left-color:transparent;}
-.add-set-btn{padding:6px 12px;border-radius:var(--r-pill);border:1px dashed var(--border-str);
-  background:transparent;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;
-  transition:all .16s var(--ease);}
-.add-set-btn:active{border-color:var(--accent);color:var(--accent);}
+/* Píldora de serie: zona de editar + zona de marcar, ambas de 44 px */
+.set-pill{display:inline-flex;align-items:stretch;border-radius:var(--r-ctl);
+  background:var(--surface);border:1px solid var(--muted);overflow:hidden;}
+.pill-tap{display:flex;align-items:baseline;gap:4px;min-height:var(--tap);padding:12px 4px 0 12px;cursor:pointer;
+  font-size:19px;font-weight:600;line-height:1;transition:transform .12s var(--ease);}
+.set-pill .kg{font-weight:700;}
+.set-pill .kg small{font:400 12px var(--f-text);color:var(--muted);margin-left:1px;}
+.set-pill .rp{color:var(--muted);}
+.set-pill .tp{align-self:center;margin-left:2px;font:400 12px var(--f-text);color:var(--muted);}
+.set-check{width:var(--tap);min-height:var(--tap);display:flex;align-items:center;justify-content:center;color:var(--muted);}
+/* La casilla es un círculo: vacío sin hacer, relleno de tinta al marcarla */
+.set-check svg{width:26px;height:26px;padding:4px;border-radius:50%;border:1.5px solid var(--muted);stroke-width:2.5;}
+/* Comparación con el micro anterior: borde de 2 px y flecha */
+.set-pill.up{border:2px solid var(--up);}
+.set-pill.down{border:2px solid var(--down);}
+.set-pill.up .pill-tap::before{content:'↑';color:var(--up);font-weight:700;}
+.set-pill.down .pill-tap::before{content:'↓';color:var(--down);font-weight:700;}
+/* Hecha: fondo tenue y casilla rellena de tinta; sin acento ni bloque sólido,
+   para que la sesión no compita con la tarjeta Bilbo */
+.set-pill.done{background:var(--tint);border-color:var(--ink);}
+.set-pill.done.up{border-color:var(--up);} .set-pill.done.down{border-color:var(--down);}
+.set-pill.done .set-check svg{background:var(--ink);border-color:var(--ink);color:var(--surface);}
+.add-set-btn{width:var(--tap);padding:0;color:var(--muted);border:1px dashed var(--muted);background:transparent;}
+.add-set-btn.wide{width:auto;padding:0 16px;}
+.rest-block{display:flex;align-items:center;gap:10px;margin:2px var(--gut) 12px;padding:0 4px;
+  font-size:13px;color:var(--muted);}
+.rest-block::before,.rest-block::after{content:'';flex:1;height:1px;background:var(--line);}
 
-.sess-obs{padding:10px var(--s4) 0 19px;font-size:11.5px;font-style:italic;color:var(--text2);line-height:1.45;}
-.ext-ok{color:var(--up);font-weight:700;} .ext-mid{color:var(--warn);font-weight:700;} .ext-no{color:var(--text2);font-weight:700;}
-/* Serie Bilbo: primer bloque de Empuje 1 y 2, tarjeta propia */
-.bilbo-row{padding-top:var(--s3);}
-.bilbo{padding:var(--s3);border-radius:var(--r-md);
-  background:linear-gradient(150deg,rgba(200,240,96,.11),rgba(200,240,96,.02));
-  border:1px solid rgba(200,240,96,.38);box-shadow:var(--lift);}
-.bilbo-top{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s2);margin-bottom:10px;}
-.bilbo-tag{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;letter-spacing:.02em;color:var(--accent);}
-.bilbo-phase{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);text-align:right;}
-.bilbo-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin-bottom:10px;}
-.bilbo-val{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:27px;line-height:1;font-variant-numeric:tabular-nums;}
-.bilbo-val small{font-size:12px;font-weight:600;color:var(--text3);margin-left:3px;}
-.bilbo-res{margin-top:9px;font-size:12px;color:var(--text2);line-height:1.5;}
-.bilbo-res b{color:var(--warn);font-weight:700;}
-.bilbo-next{margin-top:4px;color:var(--text3);font-size:11.5px;}
-.bilbo-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;}
-.bilbo-btn{padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:700;
-  border:1px solid var(--border-str);background:var(--surface2);color:var(--text2);}
-.bilbo-btn.primary{background:var(--accent);border-color:var(--accent);color:#08080c;}
-.bilbo-btn:active{transform:scale(.96);}
-.bilbo-rm{width:92px;padding:9px 10px;border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface);color:var(--text);font-size:16px;outline:none;}
-.rest-block{margin:0 var(--s3) var(--s3);padding:11px var(--s4);border-radius:var(--r-md);
-  display:flex;align-items:center;gap:10px;border:1px dashed var(--border);opacity:.65;}
-.rest-ico{font-size:15px;filter:grayscale(.4);}
-.rest-lbl{font-size:12px;font-style:italic;color:var(--text3);}
+/* ── Tarjeta Bilbo: la protagonista ───────────────────────────── */
+/* Banda de acento como el canto de un disco */
+.bilbo-row{padding:12px 12px 14px;border-top:none;}
+.bilbo{padding:14px 14px 14px 16px;border-radius:var(--r-chip) var(--r-card) var(--r-card) var(--r-chip);
+  background:var(--accent-tint);border:1px solid var(--line);border-left:6px solid var(--accent);}
+.bilbo-top{display:flex;flex-direction:column;gap:2px;margin-bottom:12px;}
+.bilbo-tag{font:700 22px/1.1 var(--f-num);}
+.bilbo-phase{font-size:13px;color:var(--muted);}
+.bilbo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.bilbo-grid .dlabel{margin-bottom:2px;}
+.bilbo-val{font-weight:700;font-size:40px;line-height:1;}
+.bilbo-val small{font:500 15px var(--f-text);color:var(--muted);margin-left:4px;}
+.bilbo-grid .dsub{margin-top:4px;}
+.bilbo .sets-container{margin-top:14px;}
+.bilbo-res{margin-top:10px;font-size:14px;color:var(--muted);line-height:1.5;}
+.bilbo-res b{color:var(--ink);font-weight:600;}
+.bilbo-next{margin-top:2px;}
+.bilbo-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+.bilbo-rm{width:104px;}
 
 /* ── Histórico ────────────────────────────────────────────────── */
-.tt-bar{display:flex;align-items:center;gap:var(--s2);padding:0 var(--s3) var(--s2);}
-.tt-btn{flex:none;width:40px;height:40px;border-radius:var(--r-sm);cursor:pointer;
-  border:1px solid var(--border);background:var(--surface);color:var(--text2);
-  font-size:20px;display:flex;align-items:center;justify-content:center;
-  transition:all .16s var(--ease);}
-.tt-btn:active:not(:disabled){border-color:var(--accent);color:var(--accent);transform:scale(.94);}
-.tt-btn:disabled{opacity:.22;cursor:default;}
-.tt-label{flex:1;text-align:center;font-weight:800;font-size:22px;letter-spacing:.01em;}
-.tt-sub{padding:0 var(--s3);margin-bottom:var(--s3);text-align:center;
-  font-size:11px;color:var(--text3);}
-.hist-filters{display:flex;gap:6px;padding:0 var(--s3) var(--s4);
-  overflow-x:auto;scrollbar-width:none;}
+.tt-bar{display:flex;align-items:center;gap:8px;padding:0 var(--gut) 4px;}
+.tt-btn{width:var(--tap);padding:0;}
+.tt-label{flex:1;text-align:center;font-weight:700;font-size:24px;}
+.tt-sub{padding:0 var(--gut);margin-bottom:12px;text-align:center;font-size:13px;color:var(--muted);}
+.hist-filters{display:flex;gap:6px;padding:0 var(--gut) 6px;overflow-x:auto;scrollbar-width:none;}
 .hist-filters::-webkit-scrollbar{display:none;}
-.filt-btn{--k:var(--text2);flex:none;white-space:nowrap;padding:7px 13px;border-radius:var(--r-pill);
-  border:1px solid var(--border);background:transparent;color:var(--text2);
-  font-size:12px;font-weight:600;cursor:pointer;transition:all .16s var(--ease);}
-.filt-btn.k-push{--k:var(--push);} .filt-btn.k-pull{--k:var(--pull);}
-.filt-btn.k-legs{--k:var(--legs);} .filt-btn.k-arm{--k:var(--arm);}
-.filt-btn.active{background:var(--k);border-color:var(--k);color:#08080c;font-weight:700;}
-.hist-ex{margin:0 var(--s3) 10px;border-radius:var(--r-md);overflow:hidden;
-  background:var(--surface);border:1px solid var(--border);box-shadow:var(--lift);}
-.hist-ex-hdr{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
-  padding:11px var(--s4);background:var(--surface2);}
-.hex-name{font-size:13.5px;font-weight:600;line-height:1.25;}
-.htrend{flex:none;font-size:11px;font-weight:700;letter-spacing:.03em;}
-.htrend.up{color:var(--up);}.htrend.down{color:var(--down);}.htrend.flat{color:var(--text3);}
+.filt-btn{flex:none;min-height:var(--tap);padding:0 14px;border-radius:var(--r-ctl);white-space:nowrap;
+  background:var(--surface);color:var(--ink);font:500 15px/1 var(--f-text);}
+.filt-btn.active{background:var(--ink);color:var(--surface);font-weight:600;}
+.hist-ex{margin:0 var(--gut) 8px;border-radius:var(--r-card);background:var(--surface);overflow:hidden;}
+.hist-ex-hdr{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:12px 16px 4px;}
+.hex-name{font-size:15px;font-weight:600;line-height:1.3;}
+.htrend{flex:none;font-size:13px;font-weight:600;color:var(--muted);}
+.htrend.up{color:var(--up);} .htrend.down{color:var(--down);}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .hist-table{width:100%;border-collapse:collapse;}
-.hist-table td{padding:9px var(--s4);font-size:12px;border-bottom:1px solid var(--border);
-  vertical-align:middle;}
-.hist-table tr:last-child td{border-bottom:none;}
-.mnum{width:34px;font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--text3);}
+.hist-table td{padding:6px 16px;font-size:14px;vertical-align:middle;}
+.mnum{width:44px;font-size:15px;font-weight:600;color:var(--muted);white-space:nowrap;}
 .sets-row{display:flex;flex-wrap:wrap;gap:4px;}
-.mpill{padding:3px 9px;border-radius:var(--r-pill);font-size:11px;font-weight:500;
-  border:1px solid var(--border);background:var(--surface2);color:var(--text2);}
-.mpill.up{border-color:rgba(76,219,122,.45);color:var(--up);background:rgba(76,219,122,.08);}
-.mpill.down{border-color:rgba(240,86,91,.45);color:var(--down);background:rgba(240,86,91,.08);}
-/* Etiqueta de sección coloreada por tipo de sesión */
-.sec-label.k-push{color:var(--push);} .sec-label.k-pull{color:var(--pull);}
-.sec-label.k-legs{color:var(--legs);} .sec-label.k-arm{color:var(--arm);}
+.mpill{padding:2px 7px;border-radius:var(--r-chip);font-size:16px;font-weight:600;
+  background:transparent;color:var(--ink);border:1px solid var(--line);white-space:nowrap;}
+.mpill small{font:400 12px var(--f-text);color:var(--muted);}
+.mpill.up{border-color:var(--up);color:var(--up);}
+.mpill.down{border-color:var(--down);color:var(--down);}
+.mpill.up::before{content:'↑';} .mpill.down::before{content:'↓';}
+.first-rec{font-size:13px;color:var(--muted);}
 
-/* ── Dashboard ────────────────────────────────────────────────── */
-.dash-sec{padding:0 var(--s3) var(--s6);}
-.dash-title{font-weight:700;font-size:13px;color:var(--text3);margin-bottom:10px;
-  display:flex;align-items:center;gap:10px;}
-.dash-title::after{content:'';flex:1;height:1px;background:var(--border);}
-.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin-bottom:var(--s3);}
-.dcard{padding:var(--s4);border-radius:var(--r-md);background:var(--surface);
-  border:1px solid var(--border);box-shadow:var(--lift);}
+/* ── Estadísticas ─────────────────────────────────────────────── */
+.dash-sec{padding:0 var(--gut) 26px;}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.dcard{padding:14px 16px;border-radius:var(--r-card);background:var(--surface);min-width:0;}
 .dcard.wide{grid-column:1/-1;}
-.dlabel{font-size:9px;font-weight:700;color:var(--text3);margin-bottom:6px;}
-.dvalue{font-weight:800;font-size:31px;line-height:1;letter-spacing:.01em;}
-.dvalue.ac{color:var(--accent);}
+.dcard + .dcard.stack,.dcard.stack{margin-top:8px;}
+.dlabel{font-size:13px;color:var(--muted);margin-bottom:6px;}
+.dlabel-row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.dvalue{font-weight:700;font-size:34px;line-height:1;}
 .dvalue.up{color:var(--up);}
-.dsub{font-size:11px;color:var(--text3);margin-top:4px;}
-.chart-wrap{position:relative;height:150px;margin-top:10px;}
-canvas{width:100%!important;}
-.ldot{display:inline-block;width:8px;height:8px;border-radius:50%;
-  margin-right:5px;vertical-align:middle;}
-/* Estado vacío: mejor un mensaje que un gráfico en blanco */
-.empty{padding:26px 18px;text-align:center;font-size:12.5px;color:var(--text3);
-  line-height:1.6;border:1px dashed var(--border);border-radius:var(--r-md);}
-.empty b{display:block;color:var(--text2);font-weight:600;font-size:13.5px;margin-bottom:5px;}
-
-.goal-row{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2);}
-.goal-lbl{flex:none;min-width:72px;font-size:11px;font-weight:700;color:var(--text2);}
-.goal-inp{flex:1;min-width:0;padding:10px 12px;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface2);color:var(--text);
-  font-size:15px;outline:none;transition:border-color .16s var(--ease);}
-.goal-inp:focus{border-color:var(--accent);}
-.goal-save{flex:none;padding:10px 14px;border-radius:var(--r-sm);border:none;cursor:pointer;
-  background:var(--accent);color:#08080c;font-weight:700;font-size:12px;}
-.goal-save:active{transform:scale(.96);}
-.prog-wrap{height:6px;margin-top:7px;border-radius:var(--r-pill);
-  background:var(--surface3);overflow:hidden;}
-.prog-bar{height:100%;border-radius:var(--r-pill);background:var(--accent);
-  transition:width .45s var(--ease);}
-.prog-bar.up{background:var(--up);}
-.prog-bar.danger{background:var(--down);}
-.goal-eta{font-size:11px;color:var(--text2);line-height:1.55;margin-top:7px;}
-.alert-card{margin:0 var(--s3) 10px;padding:12px var(--s4);border-radius:var(--r-md);
-  font-size:12.5px;line-height:1.5;color:var(--down);
-  background:rgba(240,86,91,.07);border:1px solid rgba(240,86,91,.22);}
-.alert-card strong{display:block;font-weight:700;margin-bottom:3px;}
-
-/* ── Volumen por grupo muscular ───────────────────────────────── */
-.vol-list{margin-top:var(--s2);}
-.vol-row{display:flex;align-items:center;gap:var(--s2);padding:5px 0;font-size:12px;}
-.vol-name{flex:none;min-width:98px;color:var(--text2);}
-.vol-track{flex:1;height:6px;border-radius:var(--r-pill);background:var(--surface3);overflow:hidden;}
-.vol-fill{height:100%;border-radius:var(--r-pill);background:var(--accent);transition:width .45s var(--ease);}
-.vol-fill.low{background:var(--down);}
-.vol-fill.none{background:var(--text3);}
-.vol-num{flex:none;min-width:56px;text-align:right;font-size:11px;font-weight:600;color:var(--text3);}
-.vol-gap{margin-top:var(--s3);padding:12px var(--s3);border-radius:var(--r-sm);
-  font-size:12px;line-height:1.6;color:var(--warn);
-  background:rgba(240,176,64,.06);border:1px solid rgba(240,176,64,.2);}
-.vol-gap strong{display:block;font-weight:700;margin-bottom:5px;}
+.dsub{font-size:13px;color:var(--muted);margin-top:4px;}
+.chart-wrap{position:relative;height:160px;margin-top:8px;}
+.chart-wrap.tall{height:210px;}
+.chart-wrap.mini{height:72px;margin-top:4px;}
+canvas{max-width:100%;}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);}
+.ldot{display:inline-block;width:14px;height:0;margin-right:5px;vertical-align:middle;border-top:2px solid var(--ink);}
+.ldot.proj{border-top:2px dashed var(--muted);}
+.empty{padding:22px 16px;text-align:center;font-size:14px;color:var(--muted);line-height:1.55;
+  border:1px dashed var(--muted);border-radius:var(--r-ctl);}
+.empty b{display:block;color:var(--ink);font-weight:600;margin-bottom:4px;}
+.goal-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.goal-lbl{flex:none;min-width:84px;font:600 17px var(--f-num);font-variant-numeric:tabular-nums;}
+.goal-inp{flex:1;min-width:0;}
+.goal-save{flex:none;}
+.prog-wrap{height:6px;border-radius:3px;background:var(--line);overflow:hidden;}
+.prog-bar{height:100%;background:var(--ink);transition:width .3s var(--ease);}
+.prog-bar.up{background:var(--up);} .prog-bar.danger{background:var(--down);}
+.goal-eta{font-size:13px;color:var(--muted);line-height:1.5;margin-top:8px;}
+.alert-card{margin:0 var(--gut) 10px;padding:12px 14px;border-radius:var(--r-ctl);
+  font-size:14px;line-height:1.5;color:var(--ink);background:var(--surface);border-left:4px solid var(--down);}
+.alert-card strong{display:block;color:var(--down);}
+.sess-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sc-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
+.sc-head .dlabel{margin:0;}
+.sc-val{font:700 20px var(--f-num);font-variant-numeric:tabular-nums;color:var(--muted);}
+.sc-val.up{color:var(--up);} .sc-val.down{color:var(--down);}
+.vol-list{margin-top:8px;}
+.vol-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:14px;}
+.vol-name{flex:none;min-width:98px;}
+.vol-track{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden;}
+.vol-fill{height:100%;background:var(--down);}
+.vol-num{flex:none;min-width:58px;text-align:right;font-size:16px;font-weight:600;color:var(--muted);}
+.vol-gap{margin-top:12px;padding:4px 0 4px 14px;font-size:14px;line-height:1.5;
+  border-left:4px solid var(--down);}
+.vol-gap.ok{border-left-color:var(--up);}
+.vol-gap strong{display:block;color:var(--down);margin-bottom:2px;}
+.vol-gap.ok strong{color:var(--up);}
+.an-row{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 0;cursor:pointer;
+  border-bottom:1px solid var(--line);}
+.an-row:last-child{border-bottom:none;}
+.an-main{flex:1;min-width:0;}
+.an-name{font-size:15px;font-weight:500;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.an-meta{font-size:13px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.an-delta{flex:none;font-size:18px;font-weight:600;color:var(--muted);}
+.an-delta.up{color:var(--up);} .an-delta.down{color:var(--down);}
+.an-since{flex:none;padding:2px 8px;border-radius:var(--r-chip);font-size:13px;font-weight:600;
+  color:var(--down);border:1px solid var(--down);white-space:nowrap;}
+.an-note{font-size:13px;color:var(--muted);line-height:1.55;margin-top:10px;}
+.an-note b{color:var(--ink);}
+.an-note i{color:var(--down);font-style:normal;}
+.an-count{margin-left:auto;font-size:13px;font-weight:600;color:var(--down);}
+.exd-head{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;}
+.exd-head .dvalue small{font:500 15px var(--f-text);color:var(--muted);margin-left:3px;}
+.cyc-swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:var(--accent);}
 
 /* ── Editor ───────────────────────────────────────────────────── */
-.editor-panel{margin:0 var(--s3) var(--s3);border-radius:var(--r-md);overflow:hidden;
-  background:var(--surface);border:1px solid var(--border);box-shadow:var(--lift);}
-.editor-hdr{display:flex;align-items:center;justify-content:space-between;
-  padding:var(--s3) var(--s4);background:var(--surface2);cursor:pointer;}
-.editor-hdr-title{font-weight:700;font-size:16px;letter-spacing:.01em;}
-.editor-body{display:none;padding:var(--s4);}
+.editor-panel{margin:0 var(--gut) 10px;border-radius:var(--r-card);background:var(--surface);overflow:hidden;}
+.editor-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px;
+  padding:0 8px 0 16px;cursor:pointer;}
+.editor-hdr-title{font-size:16px;font-weight:600;}
+.editor-hdr .schev{flex:none;}
+.editor-body{display:none;padding:4px 16px 16px;}
 .editor-body.open{display:block;}
-.editor-step{margin:12px 0 5px;font-size:12px;color:var(--text2);line-height:1.5;}
-.editor-step strong{display:block;color:var(--text);margin-bottom:4px;}
-.code-block{margin:var(--s2) 0;padding:12px;border-radius:var(--r-sm);
-  background:#06060a;border:1px solid var(--border);color:var(--accent2);
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.65;
-  white-space:pre;overflow-x:auto;}
-.ed-sel{width:100%;padding:12px;border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface2);color:var(--text);font-size:15px;outline:none;}
-.ed-sel:focus{border-color:var(--accent);}
-.ed-sublabel{margin:var(--s4) 0 6px;font-size:9px;font-weight:700;color:var(--text3);}
-.ed-tagrow{display:flex;gap:var(--s2);}
-.ed-tagrow input{flex:1;min-width:0;padding:11px 12px;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface2);color:var(--text);
-  font-size:14px;outline:none;}
-.ed-tagrow input:focus{border-color:var(--accent);}
-.ed-ex{padding:var(--s3) 0;border-bottom:1px solid var(--border);}
-.ed-ex:last-of-type{border-bottom:none;}
-.ed-ex-top{display:flex;align-items:center;gap:var(--s2);margin-bottom:7px;}
-.ed-name{flex:1;min-width:0;padding:10px 11px;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface2);color:var(--text);
-  font-size:14px;outline:none;}
-.ed-name:focus{border-color:var(--accent);}
-.ed-del{flex:none;width:40px;height:40px;border-radius:var(--r-sm);cursor:pointer;
-  background:rgba(240,86,91,.09);border:1px solid rgba(240,86,91,.24);
-  color:var(--down);font-size:15px;}
-.ed-del:active{background:rgba(240,86,91,.2);}
-.ed-meta{display:flex;gap:var(--s2);align-items:center;}
-.ed-meta select{flex:1;min-width:0;padding:9px 10px;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface2);color:var(--text2);
-  font-size:13px;outline:none;}
-.ed-meta input{flex:none;width:72px;padding:9px 10px;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface2);color:var(--text2);
-  font-size:13px;text-align:center;outline:none;}
-.ed-sets{flex:none;font-size:11px;color:var(--text3);white-space:nowrap;}
-.ed-add{width:100%;margin-top:var(--s4);padding:12px;border-radius:var(--r-sm);
-  border:1px dashed var(--border-str);background:transparent;color:var(--text2);
-  font-size:13px;font-weight:600;cursor:pointer;transition:all .16s var(--ease);}
-.ed-add:active{border-color:var(--accent);color:var(--accent);}
-.ed-hint{margin-top:var(--s3);font-size:11px;font-style:italic;color:var(--text3);line-height:1.55;}
+.editor-panel:has(.editor-body.open) .schev{transform:rotate(180deg);}
+.editor-step{margin:14px 0 6px;font-size:14px;color:var(--muted);line-height:1.5;}
+.editor-step strong{display:block;color:var(--ink);margin-bottom:2px;}
+.code-block{margin:6px 0;padding:12px;border-radius:var(--r-ctl);background:var(--bg);color:var(--ink);
+  font:400 13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow-x:auto;}
+.ed-sel{width:100%;}
+.ed-sublabel{margin:16px 0 6px;font-size:13px;color:var(--muted);}
+.ed-tagrow{display:flex;gap:8px;}
+.ed-tagrow input{flex:1;min-width:0;}
+.ed-ex{padding:12px 0;border-bottom:1px solid var(--line);}
+.ed-ex-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.ed-name{flex:1;min-width:0;}
+.ed-del{color:var(--down);}
+.ed-meta{display:flex;gap:8px;align-items:center;}
+.ed-meta select{flex:1;min-width:0;}
+.ed-meta input{flex:none;width:72px;text-align:center;}
+.ed-sets{flex:none;font-size:13px;color:var(--muted);white-space:nowrap;}
+.ed-add{width:100%;margin-top:14px;color:var(--ink);border:1px dashed var(--muted);background:transparent;}
+.eq-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.eq-row input{flex:1 1 90px;min-width:0;}
+.eq-row .btn{flex:1 1 100%;}
+.stack-8 > * + *{margin-top:8px;}
+.btn-row{display:flex;gap:8px;}
+.btn-row .btn{flex:1;}
+.sep{height:1px;background:var(--line);margin:16px 0;}
+#bk-status a,#bk-status a[style]{color:var(--ink)!important;font-weight:600;text-decoration:underline;}
+#app-version{padding:4px var(--gut) 0;font-size:13px;color:var(--muted);text-align:center;}
+/* Zona de reinicio */
+.rst-panel{border:1px solid var(--down);}
+.rst-panel .editor-hdr-title{color:var(--down);}
+.rst-title{margin-top:14px;font-size:14px;font-weight:600;color:var(--down);}
+.rst-list{margin:6px 0 12px;padding-left:20px;font-size:14px;line-height:1.7;}
+.rst-list li::marker{color:var(--down);}
+.rst-keep{margin-bottom:12px;padding:4px 0 4px 14px;font-size:14px;line-height:1.55;
+  border-left:4px solid var(--up);}
+.rst-keep b{display:block;color:var(--up);margin-bottom:2px;}
+.rst-check{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;font-size:14px;line-height:1.5;cursor:pointer;}
+.rst-check input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--down);}
 
-/* ── Navegación inferior ──────────────────────────────────────── */
-.bottom-bar{position:fixed;left:0;right:0;bottom:0;z-index:100;display:flex;
-  padding:7px 6px calc(7px + env(safe-area-inset-bottom));
-  background:rgba(8,8,12,.9);backdrop-filter:blur(18px) saturate(160%);
-  -webkit-backdrop-filter:blur(18px) saturate(160%);border-top:1px solid var(--border);}
-.bbot{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
-  padding:7px 4px;border:none;background:transparent;border-radius:var(--r-sm);
-  color:var(--text3);cursor:pointer;transition:color .18s var(--ease),background .18s var(--ease);}
-.bbot.active{color:var(--accent);background:rgba(200,240,96,.09);}
-.bbot svg{width:21px;height:21px;}
-.bbot span{font-size:9px;font-weight:700;}
+/* ── Hojas y diálogos ─────────────────────────────────────────── */
+.modal-overlay,.full-overlay{display:none;position:fixed;inset:0;z-index:200;background:var(--scrim);}
+.modal-overlay{align-items:flex-end;justify-content:center;}
+.full-overlay{z-index:300;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open,.full-overlay.open{display:flex;}
+.modal{width:100%;max-width:560px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom));border-radius:var(--r-sheet) var(--r-sheet) 0 0;
+  background:var(--surface);}
+/* Abrir la hoja es una acción del usuario: el movimiento responde a ella */
+.modal-overlay.open .modal{animation:sheetUp .24s var(--ease);}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:.4;}to{transform:none;opacity:1;}}
+.modal-title,.fbox-title{font:700 26px/1.1 var(--f-num);}
+.modal-sub,.fbox-sub{margin:4px 0 14px;font-size:14px;color:var(--muted);line-height:1.45;}
+.modal-actions{display:flex;gap:8px;margin-top:20px;}
+.modal-actions .btn{flex:1;}
+.fbox{width:100%;max-width:380px;padding:22px 18px;border-radius:var(--r-sheet);background:var(--surface);}
+.summary{padding:4px 14px;border-radius:var(--r-ctl);border:1px solid var(--line);margin-bottom:14px;}
+.summary-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;font-size:15px;
+  border-bottom:1px solid var(--line);}
+.summary-row:last-child{border-bottom:none;}
+.summary-row .val{font-size:18px;font-weight:600;}
+.sfield{margin-bottom:14px;}
+.sfield label{display:block;margin-bottom:6px;font-size:13px;color:var(--muted);}
+.sfield input{width:100%;}
+/* Editor de series */
+.mset{margin-bottom:10px;padding:12px;border-radius:var(--r-card);background:var(--bg);}
+.mset.done{box-shadow:inset 3px 0 0 var(--ink);}
+.mset-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.mset-n{flex:1;font-size:14px;font-weight:600;}
+.mset-done.on{background:var(--ink);border-color:var(--ink);color:var(--surface);}
+.mset-del{color:var(--muted);}
+.mset-row{display:flex;align-items:center;gap:6px;margin-top:6px;}
+.mset-lbl{flex:none;width:40px;font-size:13px;color:var(--muted);}
+.stp{flex:none;width:var(--tap);height:var(--tap);border-radius:var(--r-ctl);
+  border:1px solid var(--muted);background:var(--surface);color:var(--ink);
+  font:600 22px/1 var(--f-text);transition:transform .12s var(--ease);}
+.stp:disabled{opacity:.35;}
+.stp-fallo{width:auto;padding:0 12px;font:600 14px/1 var(--f-text);}
+.stp-fallo.on{background:var(--ink);border-color:var(--ink);color:var(--surface);}
+.stp-inp{flex:1;min-width:0;height:var(--tap);text-align:center;border-radius:var(--r-ctl);
+  border:1px solid var(--muted);background:var(--surface);color:var(--ink);font-size:24px;font-weight:700;}
+.mset-type{flex:1;}
 
-/* ── Toast ────────────────────────────────────────────────────── */
-.toast{position:fixed;left:50%;bottom:90px;z-index:400;
-  transform:translateX(-50%) translateY(14px);opacity:0;pointer-events:none;
-  padding:11px 20px;border-radius:var(--r-pill);white-space:nowrap;
-  background:var(--accent);color:#08080c;font-size:13px;font-weight:700;
-  box-shadow:var(--shadow-lg);transition:opacity .28s var(--ease),transform .28s var(--ease);}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-/* Aviso persistente de versión nueva: en la PWA instalada no hay botón de recargar */
-.upd-banner{position:fixed;left:var(--s3);right:var(--s3);bottom:calc(76px + env(safe-area-inset-bottom));
-  z-index:350;display:none;align-items:center;justify-content:space-between;gap:var(--s3);
-  max-width:536px;margin:0 auto;padding:10px 10px 10px var(--s4);border-radius:var(--r-md);
-  background:var(--surface2);border:1px solid rgba(200,240,96,.4);box-shadow:var(--shadow-lg);
-  font-size:13px;font-weight:600;color:var(--text);}
-.upd-banner.show{display:flex;animation:fade .22s var(--ease);}
+/* ── Avisos ───────────────────────────────────────────────────── */
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));z-index:400;
+  transform:translate(-50%,8px);opacity:0;pointer-events:none;max-width:calc(100% - 32px);
+  padding:12px 18px;border-radius:var(--r-ctl);background:var(--ink);color:var(--surface);
+  font-size:14px;font-weight:600;transition:opacity .2s var(--ease),transform .2s var(--ease);}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+.upd-banner{position:fixed;left:var(--gut);right:var(--gut);bottom:calc(70px + env(safe-area-inset-bottom));
+  z-index:350;display:none;align-items:center;justify-content:space-between;gap:12px;max-width:536px;
+  margin:0 auto;padding:8px 8px 8px 16px;border-radius:var(--r-card);background:var(--surface);
+  border:1px solid var(--ink);font-size:15px;font-weight:600;}
+.upd-banner.show{display:flex;}
 
-/* ── Modales ──────────────────────────────────────────────────── */
-.modal-overlay{display:none;position:fixed;inset:0;z-index:200;
-  align-items:flex-end;justify-content:center;
-  background:rgba(0,0,0,.7);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);}
-.modal-overlay.open{display:flex;animation:fade .18s var(--ease);}
-.modal{width:100%;max-width:480px;max-height:86vh;overflow-y:auto;
-  padding:var(--s5) var(--s4) calc(var(--s6) + env(safe-area-inset-bottom));
-  border-radius:var(--r-lg) var(--r-lg) 0 0;background:var(--surface);
-  border:1px solid var(--border);border-bottom:none;box-shadow:var(--shadow-lg);
-  animation:slideUp .26s var(--ease);-webkit-overflow-scrolling:touch;}
-@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
-.modal-title{font-weight:800;font-size:23px;line-height:1.15;letter-spacing:.01em;}
-.modal-sub{margin:5px 0 var(--s4);font-size:11px;font-weight:600;letter-spacing:.05em;
-  text-transform:uppercase;color:var(--text3);}
-.modal-actions{display:flex;gap:10px;margin-top:var(--s5);}
-.btn{flex:1;padding:14px;border-radius:var(--r-sm);border:none;cursor:pointer;
-  font-size:14px;font-weight:700;transition:transform .14s var(--ease);}
-.btn:active{transform:scale(.97);}
-.btn-primary{background:var(--accent);color:#08080c;}
-.btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
-
-/* Editor de series: objetivos táctiles de 44px */
-.mset{margin-bottom:10px;padding:12px;border-radius:var(--r-md);
-  background:var(--surface2);border:1px solid var(--border);
-  transition:border-color .2s var(--ease),background .2s var(--ease);}
-.mset.done{background:rgba(200,240,96,.05);border-color:rgba(200,240,96,.32);}
-.mset-hdr{display:flex;align-items:center;gap:var(--s2);margin-bottom:10px;}
-.mset-n{flex:1;font-size:10px;font-weight:700;color:var(--text3);}
-.mset-done{padding:8px 13px;border-radius:var(--r-sm);cursor:pointer;
-  border:1px solid var(--border);background:transparent;color:var(--text3);
-  font-size:12px;font-weight:700;transition:all .16s var(--ease);}
-.mset-done.on{background:var(--accent);border-color:var(--accent);color:#08080c;}
-.mset-del{flex:none;width:34px;height:34px;border-radius:var(--r-sm);cursor:pointer;
-  background:transparent;border:1px solid var(--border);color:var(--text3);font-size:13px;}
-.mset-row{display:flex;align-items:center;gap:7px;margin-top:7px;}
-.mset-lbl{flex:none;width:38px;font-size:10px;font-weight:700;color:var(--text3);}
-.stp{flex:none;width:44px;height:44px;border-radius:var(--r-sm);cursor:pointer;
-  border:1px solid var(--border);background:var(--surface);color:var(--text);
-  font-size:21px;font-weight:600;line-height:1;transition:all .12s var(--ease);}
-.stp:active{background:var(--accent);border-color:var(--accent);color:#08080c;transform:scale(.93);}
-.stp:disabled{opacity:.28;}
-.stp-fallo{width:auto;padding:0 13px;font-size:11px;font-weight:800;
-  letter-spacing:.07em;text-transform:uppercase;}
-.stp-fallo.on{background:var(--down);border-color:var(--down);color:#fff;}
-.stp-inp{flex:1;min-width:0;height:44px;text-align:center;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface);color:var(--text);
-  font-size:21px;font-weight:700;outline:none;transition:border-color .16s var(--ease);}
-.stp-inp:focus{border-color:var(--accent);}
-.mset-type{flex:1;height:40px;padding:0 11px;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface);color:var(--text2);
-  font-size:13px;outline:none;}
-
-/* ── Superposiciones a pantalla completa ──────────────────────── */
-.full-overlay{display:none;position:fixed;inset:0;z-index:300;padding:20px;
-  align-items:center;justify-content:center;
-  background:rgba(0,0,0,.82);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);}
-.full-overlay.open{display:flex;animation:fade .2s var(--ease);}
-.fbox{width:100%;max-width:360px;padding:var(--s6) var(--s5);border-radius:var(--r-lg);
-  background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);}
-.fbox-title{font-weight:900;font-size:29px;line-height:1.1;letter-spacing:.01em;margin-bottom:7px;}
-.fbox-sub{font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:var(--s5);}
-.summary{padding:var(--s3);border-radius:var(--r-sm);background:var(--surface2);
-  border:1px solid var(--border);margin-bottom:var(--s4);}
-.summary-row{display:flex;justify-content:space-between;gap:var(--s3);
-  padding:4px 0;font-size:13px;color:var(--text2);}
-.summary-row .val{font-weight:700;color:var(--accent);}
-.sfield{margin-bottom:var(--s4);}
-.sfield label{display:block;margin-bottom:6px;font-size:10px;font-weight:700;
-  letter-spacing:.09em;text-transform:uppercase;color:var(--text3);}
-.sfield input{width:100%;padding:12px 13px;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface2);color:var(--text);
-  font-size:16px;outline:none;}
-.sfield input:focus{border-color:var(--accent);}
-
-/* ── Pantallas grandes ────────────────────────────────────────── */
+/* ── Pantallas anchas ─────────────────────────────────────────── */
 @media (min-width:600px){
-  .page{max-width:560px;margin:0 auto;}
-  /* 536px es el ancho real del contenido (560 menos los márgenes laterales).
-     Exacto en iOS, donde la barra de scroll es superpuesta; en escritorio con
-     barra clásica queda media barra de desfase, que es puramente cosmético. */
-  nav{padding-left:max(var(--s3),calc((100% - 536px)/2));
-      padding-right:max(var(--s3),calc((100% - 536px)/2));}
-  .bottom-bar{padding-left:max(6px,calc((100% - 536px)/2));
-              padding-right:max(6px,calc((100% - 536px)/2));}
+  .page,.appbar{max-width:560px;margin-left:auto;margin-right:auto;}
+  .bottom-bar{padding-left:calc((100% - 560px)/2);padding-right:calc((100% - 560px)/2);}
 }
 @media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+  *,*::before,*::after{animation:none!important;transition:none!important;}
 }
-/* ── Analítica de fuerza ──────────────────────────────────────── */
-.an-row{--k:var(--text2);display:flex;align-items:center;gap:var(--s3);cursor:pointer;
-  padding:11px 0;border-bottom:1px solid var(--border);transition:opacity .15s var(--ease);}
-.an-row:last-child{border-bottom:none;}
-.an-row:active{opacity:.6;}
-.an-row.k-push{--k:var(--push);} .an-row.k-pull{--k:var(--pull);}
-.an-row.k-legs{--k:var(--legs);} .an-row.k-arm{--k:var(--arm);}
-.an-main{flex:1;min-width:0;border-left:2px solid var(--k);padding-left:10px;}
-.an-name{font-size:13.5px;font-weight:600;line-height:1.25;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.an-meta{font-size:11px;color:var(--text3);margin-top:3px;}
-.an-delta{flex:none;font-size:13px;font-weight:700;color:var(--text3);}
-.an-delta.up{color:var(--up);} .an-delta.down{color:var(--down);}
-.an-since{flex:none;font-size:11px;font-weight:700;color:var(--warn);
-  background:rgba(240,176,64,.1);border:1px solid rgba(240,176,64,.25);
-  border-radius:var(--r-pill);padding:3px 9px;white-space:nowrap;}
-.an-note{font-size:11px;color:var(--text3);line-height:1.6;margin-top:10px;}
-.an-note b{color:var(--text2);font-weight:600;}
-.an-note i{color:var(--warn);font-style:normal;}
-.an-count{margin-left:auto;font-size:10px;font-weight:700;color:var(--warn);}
-.exd-head{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);margin-bottom:var(--s3);}
-.exd-head .dvalue small{font-size:14px;font-weight:600;color:var(--text3);margin-left:3px;}
-/* ── Zona de reinicio ─────────────────────────────────────────── */
-.rst-panel{border-color:rgba(240,86,91,.28);}
-.rst-panel .editor-hdr{background:rgba(240,86,91,.07);}
-.rst-panel .editor-hdr-title{color:var(--down);}
-.rst-list{margin:var(--s2) 0 var(--s3);padding-left:18px;font-size:12.5px;line-height:1.75;color:var(--text2);}
-.rst-list li::marker{color:var(--down);}
-.rst-keep{margin-bottom:var(--s3);padding:11px 13px;border-radius:var(--r-sm);
-  font-size:12.5px;line-height:1.65;color:var(--text2);
-  background:rgba(76,219,122,.06);border:1px solid rgba(76,219,122,.2);}
-.rst-keep b{color:var(--up);display:block;margin-bottom:3px;font-weight:700;}
-.rst-check{display:flex;align-items:flex-start;gap:10px;margin-bottom:var(--s4);
-  font-size:12.5px;color:var(--text2);line-height:1.5;cursor:pointer;}
-.rst-check input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--down);}
-.rst-btn{width:100%;padding:13px;border-radius:var(--r-sm);cursor:pointer;
-  background:rgba(240,86,91,.13);border:1px solid rgba(240,86,91,.35);
-  color:var(--down);font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;}
-.rst-btn:active{background:rgba(240,86,91,.24);}
 </style>
 </head>
 <body>
-<nav>
-  <div class="logo">BULK<span>26</span></div>
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showPage('micro')">Micro</button>
-    <button class="nav-tab" onclick="showPage('hist')">Histórico</button>
-    <button class="nav-tab" onclick="showPage('dash')">Stats</button>
-    <button class="nav-tab" onclick="showPage('edit')">Editor</button>
-  </div>
-</nav>
+<header class="appbar"><div class="logo">BULK<span>26</span></div></header>
 
-<!-- MICRO PAGE -->
-<div class="page active" id="page-micro">
+<!-- MICRO -->
+<main class="page active" id="page-micro">
   <div class="micro-header">
-    <div>
-      <div class="micro-title" id="micro-title">Microciclo 1</div>
-      <div class="micro-sub" id="micro-sub"></div>
-    </div>
-    <div class="micro-badge" id="micro-badge">Activo</div>
+    <h1 class="micro-title" id="micro-title">Microciclo 1</h1>
+    <div class="micro-sub" id="micro-sub"></div>
   </div>
   <div class="calendar-strip"><div class="cal-week" id="cal-week"></div></div>
   <div class="stats-bar" id="stats-bar"></div>
   <div class="close-banner">
-    <div class="close-text">¿Listo para cerrar el microciclo?<small>Archiva en histórico y prepara el siguiente</small></div>
+    <div class="close-text">¿Cerrar el microciclo?<small>Archiva en el histórico y prepara el siguiente</small></div>
     <button class="close-btn" onclick="openCloseMicro()">Cerrar M<span id="close-mnum">1</span></button>
   </div>
-  <div class="sec-label">📊 Registro diario</div>
+  <h2 class="sec-label">Registro diario</h2>
   <div class="bw-row">
-    <input class="bw-inp" id="bw-input" type="number" step="0.1" placeholder="Peso corporal (kg)"/>
-    <input class="bw-inp" id="cal-input" type="number" placeholder="Calorías" style="max-width:115px"/>
-    <button class="bw-btn" onclick="logMetrics()">✓</button>
+    <input class="bw-inp" id="bw-input" type="number" inputmode="decimal" step="0.1" placeholder="Peso corporal (kg)" aria-label="Peso corporal en kg"/>
+    <input class="bw-inp kcal" id="cal-input" type="number" inputmode="numeric" placeholder="Kcal" aria-label="Calorías"/>
+    <button class="bw-btn" onclick="logMetrics()" aria-label="Registrar día"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
   </div>
   <div class="log-list" id="log-list"></div>
   <div id="sessions-container"></div>
-</div>
+</main>
 
-<!-- HISTORICO PAGE -->
-<div class="page" id="page-hist">
+<!-- HISTÓRICO -->
+<main class="page" id="page-hist">
   <div class="page-header">
-    <div class="page-title">Histórico</div>
+    <h1 class="page-title">Histórico</h1>
     <div class="page-sub" id="hist-sub">microciclos completados</div>
   </div>
   <div class="tt-bar">
-    <button class="tt-btn" id="tt-prev" onclick="ttNav(-1)">&#8249;</button>
+    <button class="tt-btn" id="tt-prev" onclick="ttNav(-1)" aria-label="Microciclo anterior"><svg class="i" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="tt-label" id="tt-label">M1 actual</div>
-    <button class="tt-btn" id="tt-next" onclick="ttNav(+1)">&#8250;</button>
+    <button class="tt-btn" id="tt-next" onclick="ttNav(+1)" aria-label="Microciclo siguiente"><svg class="i" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
   </div>
   <div class="tt-sub" id="tt-sub"></div>
   <div class="hist-filters" id="hist-filters"></div>
   <div id="hist-container"></div>
-</div>
+</main>
 
-<!-- DASHBOARD PAGE -->
-<div class="page" id="page-dash">
-  <div class="page-header"><div class="page-title">Dashboard</div><div class="page-sub">Visión general del bulk</div></div>
+<!-- ESTADÍSTICAS -->
+<main class="page" id="page-dash">
+  <div class="page-header"><h1 class="page-title">Estadísticas</h1><div class="page-sub">Visión general del bloque</div></div>
   <div id="stag-alerts"></div>
-  <div class="dash-sec">
-    <div class="dash-title">Peso corporal</div>
+  <section class="dash-sec">
+    <h2 class="dash-title">Peso corporal</h2>
     <div class="dash-grid">
-      <div class="dcard"><div class="dlabel">Peso actual</div><div class="dvalue ac" id="d-weight">—</div><div class="dsub">Media último micro</div></div>
+      <div class="dcard"><div class="dlabel">Peso actual</div><div class="dvalue" id="d-weight">—</div><div class="dsub">Media del último micro</div></div>
       <div class="dcard"><div class="dlabel">Cambio total</div><div class="dvalue up" id="d-gain">—</div><div class="dsub" id="d-gain-sub">vs inicio</div></div>
       <div class="dcard wide">
-        <div class="dlabel" style="display:flex;justify-content:space-between;align-items:center">
-          <span>Evolución + proyección lineal</span>
-          <span style="display:flex;gap:10px;font-size:10px;align-items:center">
-            <span><span class="ldot" style="background:var(--accent)"></span>Real</span>
-            <span><span class="ldot" style="background:rgba(200,240,96,.35);outline:1px dashed var(--accent)"></span>Proyección</span>
-          </span>
+        <div class="dlabel dlabel-row">
+          <span>Evolución y proyección lineal</span>
+          <span class="legend"><span><span class="ldot"></span>Real</span><span><span class="ldot proj"></span>Proyección</span></span>
         </div>
-        <div class="chart-wrap" id="w-wrap" style="height:158px"><canvas id="weight-chart"></canvas></div>
+        <div class="chart-wrap" id="w-wrap"><canvas id="weight-chart"></canvas></div>
       </div>
     </div>
-  </div>
-  <div class="dash-sec">
-    <div class="dash-title">Objetivos</div>
-    <div class="dcard wide" style="margin-bottom:10px">
+  </section>
+  <section class="dash-sec">
+    <h2 class="dash-title">Objetivos</h2>
+    <div class="dcard">
       <div class="dlabel">Objetivo de peso (kg)</div>
-      <div class="goal-row"><span class="goal-lbl" id="gw-label">Sin definir</span><input class="goal-inp" id="gw-input" type="number" step="0.1" placeholder="p.ej. 80"/><button class="goal-save" onclick="saveGoal('w')">Fijar</button></div>
+      <div class="goal-row"><span class="goal-lbl" id="gw-label">Sin definir</span><input class="goal-inp" id="gw-input" type="number" inputmode="decimal" step="0.1" placeholder="p. ej. 80" aria-label="Objetivo de peso"/><button class="goal-save" onclick="saveGoal('w')">Fijar</button></div>
       <div class="prog-wrap"><div class="prog-bar" id="gw-bar" style="width:0%"></div></div>
       <div class="goal-eta" id="gw-eta">Define un objetivo de peso para ver proyección y ETA</div>
     </div>
-    <div class="dcard wide">
+    <div class="dcard stack">
       <div class="dlabel">Objetivo de calorías diarias (kcal)</div>
-      <div class="goal-row"><span class="goal-lbl" id="gc-label">Sin definir</span><input class="goal-inp" id="gc-input" type="number" placeholder="p.ej. 3200"/><button class="goal-save" onclick="saveGoal('c')">Fijar</button></div>
+      <div class="goal-row"><span class="goal-lbl" id="gc-label">Sin definir</span><input class="goal-inp" id="gc-input" type="number" inputmode="numeric" placeholder="p. ej. 3200" aria-label="Objetivo de calorías"/><button class="goal-save" onclick="saveGoal('c')">Fijar</button></div>
       <div class="prog-wrap"><div class="prog-bar" id="gc-bar" style="width:0%"></div></div>
       <div class="goal-eta" id="gc-eta"></div>
     </div>
-  </div>
-  <div class="dash-sec">
-    <div class="dash-title">Calorías</div>
+  </section>
+  <section class="dash-sec">
+    <h2 class="dash-title">Calorías</h2>
     <div class="dash-grid">
-      <div class="dcard"><div class="dlabel">Media último micro</div><div class="dvalue ac" id="d-cals">—</div><div class="dsub">kcal/día</div></div>
+      <div class="dcard"><div class="dlabel">Media del último micro</div><div class="dvalue" id="d-cals">—</div><div class="dsub">kcal/día</div></div>
       <div class="dcard"><div class="dlabel">Objetivo actual</div><div class="dvalue" id="d-calobj">—</div><div class="dsub">kcal/día</div></div>
       <div class="dcard wide"><div class="dlabel">Calorías por micro</div><div class="chart-wrap" id="c-wrap"><canvas id="cal-chart"></canvas></div></div>
     </div>
-  </div>
-  <div class="dash-sec">
-    <div class="dash-title">Progresión neta por sesión</div>
-    <div class="dcard wide" style="margin-bottom:10px">
-      <div class="dlabel">Saldo ejercicios por microciclo</div>
-      <div class="chart-wrap" style="height:155px;margin-top:8px"><canvas id="sess-chart"></canvas></div>
-    </div>
-    <div id="sess-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
-  </div>
-  <div class="dash-sec">
-    <div class="dash-title">Volumen por grupo muscular</div>
-    <div class="dcard wide">
+  </section>
+  <section class="dash-sec">
+    <h2 class="dash-title">Saldo por sesión</h2>
+    <div class="dlabel">Ejercicios que mejoran menos los que bajan, por microciclo</div>
+    <div class="sess-cards" id="sess-cards"></div>
+  </section>
+  <section class="dash-sec">
+    <h2 class="dash-title">Volumen por grupo muscular</h2>
+    <div class="dcard">
       <div class="dlabel" id="vol-label">Series semanales &middot; actual vs MEV orientativo</div>
-      <div class="chart-wrap" id="vol-chart-wrap" style="height:300px;margin-top:8px"><canvas id="vol-chart"></canvas></div>
+      <div class="chart-wrap" id="vol-chart-wrap" style="height:300px"><canvas id="vol-chart"></canvas></div>
       <div id="vol-gaps"></div>
     </div>
-  </div>
-  <div class="dash-sec">
-    <div class="dash-title">Analítica de fuerza</div>
-    <div class="dcard wide" style="margin-bottom:10px">
+  </section>
+  <section class="dash-sec">
+    <h2 class="dash-title">Analítica de fuerza</h2>
+    <div class="dcard">
       <div class="dlabel">Tonelaje por microciclo</div>
-      <div class="chart-wrap" id="ton-wrap" style="height:150px"><canvas id="ton-chart"></canvas></div>
+      <div class="chart-wrap" id="ton-wrap"><canvas id="ton-chart"></canvas></div>
       <div class="an-note" id="ton-note"></div>
     </div>
-    <div class="dcard wide" style="margin-bottom:10px">
+    <div class="dcard stack">
       <div class="dlabel">Mayores avances &middot; e1RM estimado</div>
       <div id="an-top"></div>
     </div>
-    <div class="dcard wide">
-      <div class="dlabel" style="display:flex;align-items:center">Estancados
-        <span class="an-count" id="an-stag-n"></span></div>
+    <div class="dcard stack">
+      <div class="dlabel dlabel-row">Estancados <span class="an-count" id="an-stag-n"></span></div>
       <div id="an-stag"></div>
     </div>
-  </div>
-</div>
+  </section>
+</main>
 
-<!-- EDITOR PAGE -->
-<div class="page" id="page-edit">
-  <div class="page-header"><div class="page-title">Editor</div><div class="page-sub">Gestión de datos</div></div>
+<!-- EDITOR -->
+<main class="page" id="page-edit">
+  <div class="page-header"><h1 class="page-title">Editor</h1><div class="page-sub">Gestión de datos</div></div>
   <div class="editor-panel">
-    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
-      <span class="editor-hdr-title">&#127947;&#65039; Editar ejercicios y sesiones</span>
-      <span style="color:var(--text3)">&#9662;</span>
+    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')" role="button" tabindex="0">
+      <span class="editor-hdr-title">Ejercicios y sesiones</span>
+      <span class="schev"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
     </div>
     <div class="editor-body open">
-      <select class="ed-sel" id="ed-session" onchange="renderExerciseEditor()"></select>
+      <select class="ed-sel" id="ed-session" onchange="renderExerciseEditor()" aria-label="Sesión"></select>
       <div class="ed-sublabel">Etiqueta de la sesión</div>
       <div class="ed-tagrow">
-        <input id="ed-tag" type="text" placeholder="Pecho &middot; Hombro &middot; Tríceps"/>
+        <input id="ed-tag" type="text" placeholder="Pecho &middot; Hombro &middot; Tríceps" aria-label="Etiqueta de la sesión"/>
         <button class="goal-save" onclick="saveSessionTag()">Guardar</button>
       </div>
       <div class="ed-sublabel">Ejercicios</div>
       <div id="ed-list"></div>
-      <button class="ed-add" onclick="addExercise(document.getElementById('ed-session').value)">+ Añadir ejercicio</button>
-      <div class="ed-hint">Kilos, repeticiones y series se siguen editando desde la pestaña Micro, tocando el ejercicio.</div>
+      <button class="ed-add" onclick="addExercise(document.getElementById('ed-session').value)">Añadir ejercicio</button>
+      <div class="ed-hint">Kilos, repeticiones y series se editan desde la pestaña Micro, tocando la serie.</div>
     </div>
   </div>
   <div class="editor-panel">
-    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
-      <span class="editor-hdr-title">📱 Editar microciclos antiguos (consola)</span>
-      <span style="color:var(--text3)">▾</span>
+    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')" role="button" tabindex="0">
+      <span class="editor-hdr-title">Editar microciclos antiguos (consola)</span>
+      <span class="schev"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
     </div>
     <div class="editor-body">
       <div class="editor-step"><strong>Ver todos los datos</strong></div>
@@ -742,62 +640,67 @@ location.reload();</div>
 d.sessions[2].exercises[1].sets[0].kg = 45;
 localStorage.setItem('b26v2', JSON.stringify(d));
 location.reload();</div>
-      <div class="editor-step"><strong>Índices sesiones: 0=E1 · 1=T1 · 2=P1 · 3=BR · 4=E2 · 5=T2 · 6=P2 · 7=Tobillo</strong></div>
+      <div class="editor-step"><strong>Índices de sesiones: 0=E1 · 1=T1 · 2=P1 · 3=BR · 4=E2 · 5=T2 · 6=P2 · 7=Tobillo</strong></div>
       <div class="editor-step"><strong>Ver índices de ejercicios de una sesión</strong></div>
       <div class="code-block">const d = JSON.parse(localStorage.getItem('b26v2'));
 d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
-      <div class="editor-step"><strong>Backup antes de editar</strong></div>
+      <div class="editor-step"><strong>Copia antes de editar</strong></div>
       <div class="code-block">copy(localStorage.getItem('b26v2'));</div>
     </div>
   </div>
   <div class="editor-panel">
-    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
-      <span class="editor-hdr-title">🛠 Editar log de peso/cal</span>
-      <span style="color:var(--text3)">▾</span>
+    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')" role="button" tabindex="0">
+      <span class="editor-hdr-title">Editar registro de peso y calorías</span>
+      <span class="schev"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
     </div>
     <div class="editor-body">
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <input id="eq-day" type="text" placeholder="Día (D1, D2...)" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;flex:1;min-width:80px"/>
-        <input id="eq-w" type="number" step="0.1" placeholder="Peso kg" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;width:90px"/>
-        <input id="eq-c" type="number" placeholder="Kcal" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Barlow',sans-serif;outline:none;width:90px"/>
-        <button onclick="quickEditLog()" style="padding:9px 16px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:13px;border:none;cursor:pointer;">Guardar</button>
+      <div class="eq-row">
+        <input id="eq-day" type="text" placeholder="Día (D1, D2…)" aria-label="Día"/>
+        <input id="eq-w" type="number" inputmode="decimal" step="0.1" placeholder="Peso kg" aria-label="Peso en kg"/>
+        <input id="eq-c" type="number" inputmode="numeric" placeholder="Kcal" aria-label="Calorías"/>
+        <button class="btn btn-strong" onclick="quickEditLog()">Guardar</button>
       </div>
-      <div id="eq-status" style="font-size:12px;color:var(--text3);"></div>
+      <div id="eq-status" class="hint"></div>
     </div>
   </div>
   <div class="editor-panel">
-    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
-      <span class="editor-hdr-title">📤 Exportar / importar datos</span>
-      <span style="color:var(--text3)">▾</span>
+    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')" role="button" tabindex="0">
+      <span class="editor-hdr-title">Exportar e importar datos</span>
+      <span class="schev"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
     </div>
     <div class="editor-body">
-      <button onclick="exportFile()" style="padding:10px 18px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:13px;border:none;font-family:'Barlow',sans-serif;cursor:pointer;margin-bottom:6px;width:100%">&#128190; Exportar copia completa (.json)</button>
-      <div id="bk-status" style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5">Archivo con todos los datos de la app. En el iPhone se abre el menú Compartir: elige <b>Guardar en Archivos</b>.</div>
-      <button onclick="exportData()" style="padding:10px 18px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;margin-bottom:10px;width:100%">📋 Copiar datos al portapapeles</button>
-      <textarea id="import-area" placeholder="Pega aquí el JSON exportado..." style="width:100%;height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-family:monospace;resize:vertical;outline:none;"></textarea>
-      <button onclick="importData()" style="padding:10px 18px;border-radius:8px;background:var(--accent);color:#0a0a0f;font-weight:700;font-size:13px;border:none;cursor:pointer;margin-top:8px;width:100%">Importar y recargar</button>
-      <!-- Sin accept: en iOS un accept con tipos JSON deja los .json en gris en Archivos -->
-      <input type="file" id="import-file" style="display:none" onchange="importFile(this)"/>
-      <button onclick="document.getElementById('import-file').click()" style="padding:10px 18px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;margin-top:8px;width:100%">&#128194; Importar desde archivo (.json)</button>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Antes de importar se valida el archivo, se pide confirmación y el estado actual se guarda en <code>b26v2_backup_preimport</code>.</div>
-      <button onclick="undoImport()" style="padding:10px 18px;border-radius:8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;margin-top:8px;width:100%">&#8630; Deshacer la última importación</button>
-      <div style="display:flex;gap:8px;margin-top:14px">
-        <button onclick="exportSetsCSV()" style="flex:1;padding:10px 12px;border-radius:9px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer">&#128202; Series CSV</button>
-        <button onclick="exportMetricsCSV()" style="flex:1;padding:10px 12px;border-radius:9px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer">&#9878; Peso/kcal CSV</button>
+      <button class="btn btn-strong btn-block" onclick="exportFile()">Exportar copia completa (.json)</button>
+      <div id="bk-status" class="hint">Archivo con todos los datos de la app. En el iPhone se abre el menú Compartir: elige <b>Guardar en Archivos</b>.</div>
+      <button class="btn btn-secondary btn-block" style="margin-top:12px" onclick="exportData()">Copiar datos al portapapeles</button>
+      <div class="sep"></div>
+      <textarea id="import-area" class="import-area" placeholder="Pega aquí el JSON exportado…" aria-label="JSON para importar"></textarea>
+      <div class="stack-8" style="margin-top:8px">
+        <button class="btn btn-secondary btn-block" onclick="importData()">Importar y recargar</button>
+        <!-- Sin accept: en iOS un accept con tipos JSON deja los .json en gris en Archivos -->
+        <input type="file" id="import-file" style="display:none" onchange="importFile(this)"/>
+        <button class="btn btn-secondary btn-block" onclick="document.getElementById('import-file').click()">Importar desde archivo (.json)</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Separador <b>;</b> y decimal <b>.</b> &mdash; Excel lo abre de doble clic; en pandas, <code>sep=';'</code>.</div>
-      <button onclick="restoreBackup()" style="padding:10px 18px;border-radius:8px;background:rgba(240,176,64,.1);color:var(--warn);border:1px solid rgba(240,176,64,.28);font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;margin-top:14px;width:100%">&#9851; Restaurar copia previa al cambio de split</button>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Copia automática del estado anterior al split de 11 días. Solo existe si la migración llegó a ejecutarse.</div>
+      <div class="hint">Antes de importar se valida el archivo, se pide confirmación y el estado actual se guarda en <code>b26v2_backup_preimport</code>.</div>
+      <button class="btn btn-secondary btn-block" style="margin-top:8px" onclick="undoImport()">Deshacer la última importación</button>
+      <div class="sep"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="exportSetsCSV()">Series CSV</button>
+        <button class="btn btn-secondary" onclick="exportMetricsCSV()">Peso y kcal CSV</button>
+      </div>
+      <div class="hint">Separador <b>;</b> y decimal <b>.</b>: Excel lo abre con doble clic; en pandas, <code>sep=';'</code>.</div>
+      <div class="sep"></div>
+      <button class="btn btn-danger" onclick="restoreBackup()">Restaurar copia previa al cambio de split</button>
+      <div class="hint">Copia automática del estado anterior al split de 11 días. Solo existe si la migración llegó a ejecutarse.</div>
     </div>
   </div>
   <div class="editor-panel rst-panel">
-    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
-      <span class="editor-hdr-title">&#9888;&#65039; Empezar de cero</span>
-      <span style="color:var(--text3)">&#9662;</span>
+    <div class="editor-hdr" onclick="this.nextElementSibling.classList.toggle('open')" role="button" tabindex="0">
+      <span class="editor-hdr-title">Empezar de cero</span>
+      <span class="schev"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
     </div>
     <div class="editor-body">
       <div class="editor-step">Borra el historial de entrenamiento y deja el programa listo para arrancar con pesos nuevos.</div>
-      <div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--down);margin-top:14px">Se borra</div>
+      <div class="rst-title">Se borra</div>
       <ul class="rst-list">
         <li>Todos los microciclos archivados (kilos y repeticiones)</li>
         <li>Las comparaciones de progreso y los saldos por sesión</li>
@@ -814,32 +717,32 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
       <div class="ed-hint">Antes de borrar se guarda una copia completa en <code>b26v2_backup_prereset</code>, restaurable desde la consola. Aun así, exporta el CSV antes si quieres conservar los datos fuera de la app.</div>
     </div>
   </div>
-  <div id="app-version" style="padding:4px var(--s3) 0;font-size:11px;color:var(--text3);text-align:center"></div>
-</div>
+  <div id="app-version"></div>
+</main>
 
-<!-- BOTTOM NAV -->
-<div class="bottom-bar">
+<!-- NAVEGACIÓN -->
+<nav class="bottom-bar" aria-label="Secciones">
   <button class="bbot active" id="btn-micro" onclick="showPage('micro')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><span>Micro</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><span>Micro</span>
   </button>
   <button class="bbot" id="btn-hist" onclick="showPage('hist')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Hist.</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Histórico</span>
   </button>
   <button class="bbot" id="btn-dash" onclick="showPage('dash')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Stats</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Estadísticas</span>
   </button>
   <button class="bbot" id="btn-edit" onclick="showPage('edit')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Editor</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Editor</span>
   </button>
-</div>
+</nav>
 
-<!-- MODALES -->
+<!-- HOJAS -->
 <div class="modal-overlay" id="edit-modal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-exname">
     <div class="modal-title" id="m-exname"></div>
     <div class="modal-sub" id="m-exobs"></div>
     <div id="m-sets"></div>
-    <div style="margin-top:11px;"><button class="add-set-btn" onclick="addSet()">+ Añadir serie</button></div>
+    <button class="add-set-btn wide" onclick="addSet()">Añadir serie</button>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeOverlay('edit-modal')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveExercise()">Guardar</button>
@@ -847,11 +750,11 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
   </div>
 </div>
 <div class="full-overlay" id="close-overlay">
-  <div class="fbox">
-    <div class="fbox-title" id="co-title">Cerrar Microciclo 1</div>
+  <div class="fbox" role="dialog" aria-modal="true" aria-labelledby="co-title">
+    <div class="fbox-title" id="co-title">Cerrar microciclo 1</div>
     <div class="fbox-sub">Archiva el micro y prepara el siguiente.</div>
     <div class="summary" id="co-summary"></div>
-    <div class="sfield"><label>Objetivo calorías siguiente micro (kcal/día)</label><input id="co-cal" type="number" placeholder="3200"/></div>
+    <div class="sfield"><label for="co-cal">Objetivo de calorías del siguiente micro (kcal/día)</label><input id="co-cal" type="number" inputmode="numeric" placeholder="3200"/></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeOverlay('close-overlay')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmClose()">Confirmar y cerrar</button>
@@ -859,15 +762,15 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
   </div>
 </div>
 <div class="full-overlay" id="start-overlay">
-  <div class="fbox">
-    <div class="fbox-title" id="so-title" style="color:var(--accent)">Microciclo 2</div>
+  <div class="fbox" role="dialog" aria-modal="true" aria-labelledby="so-title">
+    <div class="fbox-title" id="so-title">Microciclo 2</div>
     <div class="fbox-sub" id="so-sub">Micro anterior archivado.</div>
-    <div class="sfield"><label>Objetivo calorías diarias (kcal/día)</label><input id="so-cal" type="number" placeholder="3200"/></div>
-    <button class="btn btn-primary" style="width:100%" onclick="startMicro()">Empezar microciclo</button>
+    <div class="sfield"><label for="so-cal">Objetivo de calorías diarias (kcal/día)</label><input id="so-cal" type="number" inputmode="numeric" placeholder="3200"/></div>
+    <button class="btn btn-primary btn-block" onclick="startMicro()">Empezar microciclo</button>
   </div>
 </div>
 <div class="modal-overlay" id="ex-detail">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exd-name">
     <div class="modal-title" id="exd-name"></div>
     <div class="modal-sub" id="exd-sub"></div>
     <div id="exd-body"></div>
@@ -876,10 +779,10 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
     </div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="upd-banner" id="upd-banner">
   <span>Nueva versión disponible</span>
-  <button class="close-btn" onclick="location.reload()">Recargar</button>
+  <button class="btn btn-strong" onclick="location.reload()">Recargar</button>
 </div>
 
 <script src="./chart.umd.min.js"></script>
@@ -1208,6 +1111,25 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 function closeOverlay(id){document.getElementById(id).classList.remove('open');}
 
+// ── PRESENTACIÓN: ICONOS Y COLORES ─────────────────────────────
+const svgI = d => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  check: svgI('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  edit:  svgI('<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>'),
+  trash: svgI('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>'),
+  close: svgI('<path d="M6 6l12 12M18 6L6 18"/>'),
+  chev:  svgI('<path d="M6 9l6 6 6-6"/>'),
+};
+// Los gráficos leen los tokens de :root, así siguen al modo claro/oscuro
+function tok(name){return getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim();}
+function alpha(hex, a){
+  const h = hex.replace('#', ''), n = parseInt(h.length === 3 ? h.replace(/./g, c => c + c) : h, 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+}
+function theme(){
+  const t = {}; ['bg','surface','ink','muted','line','accent','up','down'].forEach(k => {t[k] = tok(k);}); return t;
+}
+
 // ── SERIE BILBO: REPLAY ────────────────────────────────────────
 // El estado del bloque no se guarda: se recalcula recorriendo en orden las
 // series Bilbo hechas (snapshots por microNum con E1 antes que E2, y después el
@@ -1358,11 +1280,11 @@ function setCmpClasses(sess, ex, micro, prevMap, R){
 // ── NAV ────────────────────────────────────────────────────────
 function showPage(p){
   document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(e=>e.classList.remove('active'));
-  document.querySelectorAll('.bbot').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.bbot').forEach(e=>{e.classList.remove('active'); e.removeAttribute('aria-current');});
   document.getElementById('page-'+p).classList.add('active');
-  document.querySelectorAll('.nav-tab')[['micro','hist','dash','edit'].indexOf(p)].classList.add('active');
   document.getElementById('btn-'+p).classList.add('active');
+  document.getElementById('btn-'+p).setAttribute('aria-current', 'page');
+  window.scrollTo(0, 0);
   if (p==='hist') renderHist();
   if (p==='dash') renderDash();
   if (p==='edit') renderExerciseEditor();
@@ -1374,22 +1296,26 @@ function showPage(p){
 const SESS_KIND = {};
 SCHEDULE.forEach((sid,i) => {if (sid!=='rest') SESS_KIND[sid] = SCOLORS[i];});
 function kindClass(sid){return SESS_KIND[sid] ? ' k-'+SESS_KIND[sid] : '';}
-function kindVar(sid){return SESS_KIND[sid] ? 'var(--'+SESS_KIND[sid]+')' : 'var(--text2)';}
 
 function renderCal(){
   const el = document.getElementById('cal-week'); el.innerHTML = '';
-  el.style.gridTemplateColumns = 'repeat('+SCHEDULE.length+',minmax(0,1fr))';
+  // Descansos como separadores de 6 px: los días de entreno llegan a 44 px a 375 px
+  el.style.gridTemplateColumns = SCHEDULE.map(s => s === 'rest' ? '6px' : 'minmax(0,1fr)').join(' ');
   const cur = currentSessionId();
   SCHEDULE.forEach((sid, i) => {
     const isRest = sid === 'rest';
-    const isDone = !isRest && sessHasDone(sid);
-    const isCurrent = !isRest && sid === cur;
-    const d = document.createElement('div');
-    d.className = 'cal-day' + (isCurrent?' current':'') + (isDone?' done':'')
-      + (!isRest&&!isCurrent?' training':'') + (isRest&&!isCurrent?' rest-day':'');
-    if (!isRest) d.style.setProperty('--k', 'var(--'+SCOLORS[i]+')');
-    d.innerHTML = `<span class="dlabel">${SSHORT[i]}</span>${!isCurrent?`<div class="cdot ${SCOLORS[i]}"></div>`:''}`;
-    if (!isRest) d.onclick = () => {
+    if (isRest){
+      const r = document.createElement('div'); r.className = 'cal-rest'; r.title = 'Descanso';
+      el.appendChild(r); return;
+    }
+    const isDone = sessHasDone(sid);
+    const isCurrent = sid === cur;
+    const d = document.createElement('button');
+    d.className = 'cal-day' + (isCurrent?' current':'') + (isDone?' done':'');
+    const nm = (sessions.find(s => s.id === sid) || {}).name || sid;
+    d.setAttribute('aria-label', nm + (isCurrent ? ', hoy' : isDone ? ', hecha' : ''));
+    d.innerHTML = `<span class="dlabel">${SSHORT[i]}</span>${isCurrent ? '<span class="cnote">hoy</span>' : ''}`;
+    d.onclick = () => {
       const el2 = document.getElementById('sess-'+sid);
       if (el2) {el2.classList.add('open'); el2.scrollIntoView({behavior:'smooth', block:'start'});}
     };
@@ -1421,11 +1347,10 @@ function renderStats(){
   const avgW = ws.length ? (ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(1) : '—';
   const avgC = cs.length ? Math.round(cs.reduce((a,b)=>a+b,0)/cs.length) : '—';
   bar.innerHTML = `
-    <div class="stat-card"><div class="slabel">Micro</div><div class="svalue">#${APP.microNum}</div><div class="ssub">en curso</div></div>
-    <div class="stat-card"><div class="slabel">&#8593; Mejoras</div><div class="svalue" style="color:var(--up)">${ups}</div><div class="ssub">vs M${APP.microNum-1}</div></div>
-    <div class="stat-card"><div class="slabel">&#8595; Bajas</div><div class="svalue" style="color:var(--down)">${downs}</div><div class="ssub">vs M${APP.microNum-1}</div></div>
-    <div class="stat-card"><div class="slabel">Peso med.</div><div class="svalue">${avgW}</div><div class="ssub">kg · ${ws.length} días</div></div>
-    <div class="stat-card"><div class="slabel">Cal med.</div><div class="svalue" style="font-size:18px">${avgC}</div><div class="ssub">kcal · ${cs.length} días</div></div>`;
+    <div class="stat-card"><div class="slabel">Mejoras</div><div class="svalue${ups?' up':''}">${ups}</div><div class="ssub">vs M${APP.microNum-1}</div></div>
+    <div class="stat-card"><div class="slabel">Bajas</div><div class="svalue${downs?' down':''}">${downs}</div><div class="ssub">vs M${APP.microNum-1}</div></div>
+    <div class="stat-card"><div class="slabel">Peso medio</div><div class="svalue">${avgW}</div><div class="ssub">kg · ${ws.length} días</div></div>
+    <div class="stat-card"><div class="slabel">Kcal media</div><div class="svalue">${avgC}</div><div class="ssub">${cs.length} días</div></div>`;
 }
 
 // ── SESIONES ───────────────────────────────────────────────────
@@ -1456,7 +1381,7 @@ function renderSessions(){
   SCHEDULE.forEach(sid => {
     if (sid === 'rest') {
       const r = document.createElement('div'); r.className = 'rest-block';
-      r.innerHTML = '<div class="rest-ico">&#128164;</div><div class="rest-lbl">Día de descanso</div>';
+      r.textContent = 'Descanso';
       cont.appendChild(r); return;
     }
     const sess = sessions.find(s => s.id===sid); if (!sess) return;
@@ -1465,17 +1390,18 @@ function renderSessions(){
   // Sesiones extra (tobillo): fuera del orden del split, una vez por micro
   const extras = sessions.filter(s => s.extra);
   if (extras.length){
-    const l = document.createElement('div'); l.className = 'sec-label';
-    l.textContent = 'Extra · 1 vez por micro'; cont.appendChild(l);
+    const l = document.createElement('h2'); l.className = 'sec-label';
+    l.textContent = 'Extra · una vez por micro'; cont.appendChild(l);
     extras.forEach(sess => cont.appendChild(sessionEl(sess, openIds, R)));
   }
 }
 function setPill(sid, ei, si, set, c, unit){
-  const kstr = set.kg!=null ? set.kg+' kg' : 'BW';
+  const kstr = set.kg!=null ? `${set.kg}<small>kg</small>` : 'BW';
   const tstr = set.type ? `<span class="tp">${set.type}</span>` : '';
+  const cmpTxt = c==='up' ? ', mejora' : c==='down' ? ', baja' : '';
   return `<div class="set-pill ${c}${set.done?' done':''}">
-    <span class="pill-tap" onclick="openEdit('${sid}',${ei})"><span class="kg">${kstr}</span><span class="rp">× ${esc(set.reps)}${unit==='s'?' s':''}</span>${tstr}</span>
-    <button class="set-check" onclick="toggleSetDone('${sid}',${ei},${si},event)" aria-label="Serie hecha">&#10003;</button>
+    <span class="pill-tap" role="button" tabindex="0" onclick="openEdit('${sid}',${ei})" aria-label="Editar serie ${si+1}${cmpTxt}"><span class="kg">${kstr}</span><span class="rp">×${esc(set.reps)}${unit==='s'?' s':''}</span>${tstr}</span>
+    <button class="set-check" onclick="toggleSetDone('${sid}',${ei},${si},event)" aria-label="Serie ${si+1} hecha" aria-pressed="${set.done?'true':'false'}">${ICON.check}</button>
   </div>`;
 }
 function sessionEl(sess, openIds, R){
@@ -1491,22 +1417,24 @@ function sessionEl(sess, openIds, R){
     return `<div class="exercise${exDone===ex.sets.length&&ex.sets.length?' ex-done':''}">
       <div class="ex-name">${esc(ex.name)}${musc}</div>
       ${ex.obs?`<div class="ex-obs">${esc(ex.obs)}</div>`:''}
-      <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})">&#9999;&#65039;</button></div>
+      <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})" aria-label="Editar series de ${esc(ex.name)}">${ICON.edit}</button></div>
       <div class="ex-rir">RIR ${ex.rir} · ${ex.sets.length} series</div>
     </div>`;
   }).join('');
   const pct = totalSets ? Math.round(doneSets/totalSets*100) : 0;
+  // Estado del extra en neutro: «en curso» no es un retroceso
   const status = !sess.extra ? ''
-    : doneSets && doneSets===totalSets ? ' · <b class="ext-ok">Hecho &#10003;</b>'
-    : doneSets ? ' · <b class="ext-mid">En curso</b>' : ' · <b class="ext-no">Pendiente</b>';
-  const d = document.createElement('div');
-  d.className = 'session' + kindClass(sid) + (openIds['sess-'+sid] ? ' open' : '') + (doneSets&&doneSets===totalSets ? ' sess-complete' : '');
+    : doneSets && doneSets===totalSets ? '<span class="ext-st ext-ok">Hecho</span>'
+    : doneSets ? '<span class="ext-st ext-mid">En curso</span>' : '<span class="ext-st ext-no">Pendiente</span>';
+  const d = document.createElement('section');
+  d.className = 'session' + (sess.extra ? ' extra' : '') + (openIds['sess-'+sid] ? ' open' : '') + (doneSets&&doneSets===totalSets ? ' sess-complete' : '');
   d.id = 'sess-'+sid;
-  d.innerHTML = `<div class="session-hdr" onclick="this.parentElement.classList.toggle('open')">
+  d.innerHTML = `<div class="session-hdr" role="button" tabindex="0" aria-expanded="${openIds['sess-'+sid]?'true':'false'}"
+      onclick="const s=this.parentElement; s.classList.toggle('open'); this.setAttribute('aria-expanded', s.classList.contains('open'))">
     <div><div class="sname">${esc(sess.name)}</div><div class="stag">${esc(sess.tag)}${status}</div></div>
     <div class="hdr-right">
-      <div class="sess-prog${doneSets?' on':''}">${doneSets}/${totalSets}</div>
-      <div class="schev">&#9662;</div>
+      <div class="sess-prog${doneSets?' on':''}" aria-label="${doneSets} de ${totalSets} series hechas">${doneSets}/${totalSets}</div>
+      <div class="schev">${ICON.chev}</div>
     </div></div>
     <div class="sess-progbar"><div class="sess-progfill" style="width:${pct}%"></div></div>
     <div class="session-body">${sess.obs?`<div class="sess-obs">${esc(sess.obs)}</div>`:''}${exRows}</div>`;
@@ -1569,7 +1497,7 @@ function bilboCard(sess, ex, ei, R){
       <div><div class="dlabel">Objetivo</div><div class="bilbo-val">${obj}${obj !== '—' && obj !== 'RM' ? '<small>reps</small>' : ''}</div>
         <div class="dsub">${objSub}</div></div>
     </div>
-    <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})">&#9999;&#65039;</button></div>
+    <div class="sets-container">${pills}<button class="add-set-btn" onclick="openEdit('${sid}',${ei})" aria-label="Editar la serie Bilbo">${ICON.edit}</button></div>
     ${res ? `<div class="bilbo-res">${res}</div>` : ''}
     <div class="bilbo-acts">${acts}</div>
   </div></div>`;
@@ -1621,18 +1549,18 @@ function openBilboFix(){
       <button class="goal-save" onclick="bilboFix('kg')">Fijar</button></div>
     <div class="ed-sublabel">Fase</div>
     <div class="goal-row"><select class="ed-sel" id="bf-phase">
-      ${Array.from({length:cfg.cycles}, (_, i) => `<option value="c${i+1}">Ciclo ${i+1} (bloque ${n.block})</option>`).join('')}
-      <option value="transition">Transición</option><option value="test">Test de RM</option></select>
+      ${Array.from({length:cfg.cycles}, (_, i) => `<option value="c${i+1}"${n.phase==='cycle'&&n.cycle===i+1?' selected':''}>Ciclo ${i+1} (bloque ${n.block})</option>`).join('')}
+      <option value="transition"${n.phase==='transition'?' selected':''}>Transición</option><option value="test"${n.phase==='test'?' selected':''}>Test de RM</option></select>
       <button class="goal-save" onclick="bilboFix('phase')">Aplicar</button></div>
     <div class="ed-sublabel">Nuevo bloque con RM de referencia (kg)</div>
     <div class="goal-row"><input class="goal-inp" id="bf-rm" type="text" inputmode="decimal" value="${n.rmRef}"/>
       <button class="goal-save" onclick="bilboFix('rm')">Aplicar</button></div>
     <div class="ed-sublabel">Sesiones de transición</div>
-    <div class="goal-row"><input class="goal-inp" id="bf-tn" type="number" min="1" max="12" value="${cfg.transitionSessions}"/>
+    <div class="goal-row"><input class="goal-inp" id="bf-tn" type="number" inputmode="numeric" min="1" max="12" aria-label="Sesiones de transición" value="${cfg.transitionSessions}"/>
       <button class="goal-save" onclick="bilboFix('tn')">Guardar</button></div>
     <div class="ed-sublabel">Último ajuste</div>
     <div class="goal-row"><span class="goal-eta" style="flex:1;margin:0">${last ? esc(evTxt(last)) : 'Ninguno'}</span>
-      ${last ? `<button class="goal-save" style="background:var(--surface3);color:var(--text)" onclick="bilboFix('undo')">Deshacer</button>` : ''}</div>
+      ${last ? `<button class="goal-save" onclick="bilboFix('undo')">Deshacer</button>` : ''}</div>
     <div class="ed-hint">Los kg y reps hechos se corrigen tocando la serie, como cualquier otra. Estos ajustes quedan anotados en el micro y la sesión indicados arriba.</div>`;
   document.getElementById('ex-detail').classList.add('open');
 }
@@ -1656,8 +1584,14 @@ function bilboFix(what){
 }
 
 // Reps frente a carga, un trazo por ciclo
-const CYCLE_COLORS = ['#c8f060','#60d0f0','#f0b040','#b060f0','#4cdb7a','#f0565b'];
+// Ciclos superpuestos: el actual con el acento de la Bilbo; los anteriores en
+// --muted (3:1 o más en ambos modos), discontinuos cuanto más antiguos.
+function cycleStyle(i, n, T){
+  const last = i === n - 1, age = n - 1 - i;
+  return {color: last ? T.accent : T.muted, dash: last || age === 1 ? [] : age === 2 ? [6,4] : [2,3], width: last ? 2.5 : 1.5};
+}
 function openBilboChart(){
+  applyChartTheme();
   const R = bilboReplay(), cfg = R.cfg;
   const cyc = R.cycles.filter(c => c.pts.length);
   document.getElementById('exd-name').textContent = 'Serie Bilbo · ciclos';
@@ -1667,29 +1601,31 @@ function openBilboChart(){
     body.innerHTML = '<div class="empty"><b>Sin series Bilbo hechas</b>Aparecen al marcar la serie como hecha.</div>';
     document.getElementById('ex-detail').classList.add('open'); return;
   }
-  body.innerHTML = `<div class="chart-wrap" style="height:210px"><canvas id="exd-chart"></canvas></div>
-    <table class="hist-table" style="margin-top:10px">${cyc.map((c, i) => {
+  const T = theme();
+  body.innerHTML = `<div class="chart-wrap tall"><canvas id="exd-chart" aria-label="Reps frente a carga por ciclo"></canvas></div>
+    <div class="table-scroll"><table class="hist-table" style="margin-top:10px">${cyc.map((c, i) => {
       const f = c.pts[0], l = c.pts[c.pts.length - 1];
-      return `<tr><td class="mnum" style="width:58px;color:${CYCLE_COLORS[i % CYCLE_COLORS.length]}">B${c.block}·C${c.cycle}</td>
-        <td>${c.pts.length} series · ${f.kg} → ${l.kg} kg</td><td style="text-align:right">últ. ${l.kg}×${l.reps}</td></tr>`;}).join('')}
-      ${R.heavy.length ? `<tr><td class="mnum">Pesadas</td><td colspan="2">${R.heavy.map(p => p.kg + '×' + p.reps).join(' · ')}</td></tr>` : ''}</table>`;
+      return `<tr><td class="mnum" style="width:72px"><span class="cyc-swatch" style="background:var(--${i === cyc.length - 1 ? 'accent' : 'muted'})"></span>B${c.block}·C${c.cycle}</td>
+        <td>${c.pts.length} ${c.pts.length === 1 ? 'serie' : 'series'} · ${f.kg} → ${l.kg} kg</td><td class="num" style="text-align:right;font-size:16px;font-weight:600">${l.kg}×${l.reps}</td></tr>`;}).join('')}
+      ${R.heavy.length ? `<tr><td class="mnum">Pesadas</td><td colspan="2" class="num" style="font-size:16px">${R.heavy.map(p => p.kg + '×' + p.reps).join(' · ')}</td></tr>` : ''}</table></div>`;
   document.getElementById('ex-detail').classList.add('open');
   setTimeout(() => {
     dChart('exd-chart');
-    const ds = cyc.map((c, i) => ({label:'B' + c.block + '·C' + c.cycle, data:c.pts.map(p => ({x:p.kg, y:p.reps})),
-      borderColor:CYCLE_COLORS[i % CYCLE_COLORS.length], backgroundColor:CYCLE_COLORS[i % CYCLE_COLORS.length],
-      borderWidth:2, pointRadius:3, tension:.2}));
+    const ds = cyc.map((c, i) => { const st = cycleStyle(i, cyc.length, T);
+      return {label:'B' + c.block + '·C' + c.cycle, data:c.pts.map(p => ({x:p.kg, y:p.reps})),
+        borderColor:st.color, backgroundColor:st.color, borderDash:st.dash, borderWidth:st.width,
+        pointRadius:i === cyc.length - 1 ? 4 : 3, tension:.2}; });
     if (R.heavy.length) ds.push({label:'Transición/test', data:R.heavy.map(p => ({x:p.kg, y:p.reps})),
-      borderColor:'#9494a6', backgroundColor:'#9494a6', showLine:false, pointRadius:4});
+      borderColor:T.muted, backgroundColor:T.muted, showLine:false, pointRadius:4, pointStyle:'rectRot'});
     const xs = cyc.flatMap(c => c.pts.map(p => p.kg)).concat(R.heavy.map(p => p.kg));
     ds.push({label:'Umbral', data:[{x:Math.min(...xs), y:cfg.threshold}, {x:Math.max(...xs), y:cfg.threshold}],
-      borderColor:'rgba(240,86,91,.6)', borderDash:[5,4], borderWidth:1, pointRadius:0});
+      borderColor:T.muted, borderDash:[5,4], borderWidth:1, pointRadius:0});
     CH['exd-chart'] = new Chart(document.getElementById('exd-chart').getContext('2d'), {type:'line', data:{datasets:ds},
       options:{responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{display:true, labels:{color:'#5c5c70', font:{size:10}, boxWidth:11, padding:7}},
+        plugins:{legend:LEGEND,
           tooltip:{callbacks:{label:c => c.dataset.label + ': ' + c.parsed.x + ' kg × ' + c.parsed.y}}},
-        scales:{x:{...XY.x, type:'linear', title:{display:true, text:'kg', color:'#4a4a5c', font:{size:10}}},
-                y:{...XY.y, title:{display:true, text:'reps', color:'#4a4a5c', font:{size:10}}}}}});
+        scales:{x:{...XY.x, type:'linear', title:{display:true, text:'kg', color:T.muted, font:{size:12}}},
+                y:{...XY.y, title:{display:true, text:'reps', color:T.muted, font:{size:12}}}}}});
   }, 40);
 }
 
@@ -1713,8 +1649,8 @@ function renderMSets(){
     <div class="mset${s.done?' done':''}">
       <div class="mset-hdr">
         <span class="mset-n">Serie ${i+1}</span>
-        <button class="mset-done${s.done?' on':''}" onclick="toggleECDone(${i})">&#10003; Hecha</button>
-        <button class="mset-del" onclick="rmSet(${i})" aria-label="Quitar serie">&#10005;</button>
+        <button class="mset-done${s.done?' on':''}" onclick="toggleECDone(${i})" aria-pressed="${s.done?'true':'false'}">${ICON.check} Hecha</button>
+        <button class="mset-del icon-btn" onclick="rmSet(${i})" aria-label="Quitar serie ${i+1}">${ICON.trash}</button>
       </div>
       <div class="mset-row">
         <span class="mset-lbl">Kg</span>
@@ -1810,11 +1746,11 @@ function renderLogList(){
   const entries = Object.entries(APP.log).sort(([a],[b])=>parseInt(a.slice(1))-parseInt(b.slice(1)));
   if (!entries.length){el.style.display='none'; return;}
   el.style.display = 'block';
-  el.innerHTML = `<div style="padding:9px 16px 5px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600">Entradas este micro</div>`
+  el.innerHTML = `<div class="log-head">Entradas de este micro</div>`
     + entries.map(([k,v]) => `<div class="log-entry">
       <span class="log-day">${k}</span>
-      <span class="log-vals">${v.w?`<span class="log-w">&#9878; ${v.w} kg</span>`:''} ${v.c?`<span class="log-c">&#128293; ${v.c} kcal</span>`:''}</span>
-      <button class="log-del" onclick="delLog('${k}')">&#10005;</button>
+      <span class="log-vals">${v.w?`<span class="log-w">${v.w}<small>kg</small></span>`:''} ${v.c?`<span class="log-c">${v.c}<small>kcal</small></span>`:''}</span>
+      <button class="log-del" onclick="delLog('${k}')" aria-label="Borrar ${k}">${ICON.close}</button>
     </div>`).join('');
 }
 function delLog(k){
@@ -1849,7 +1785,7 @@ function openCloseMicro(){
   const avgW = ws.length ? (ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(2) : null;
   const avgC = cs.length ? Math.round(cs.reduce((a,b)=>a+b,0)/cs.length) : null;
   const bal = calcBalance(); const net = Object.values(bal).reduce((a,b)=>a+b,0);
-  document.getElementById('co-title').textContent = `Cerrar Microciclo ${APP.microNum}`;
+  document.getElementById('co-title').textContent = `Cerrar microciclo ${APP.microNum}`;
   document.getElementById('co-cal').value = APP.calObj;
   document.getElementById('co-summary').innerHTML = `
     <div class="summary-row"><span>Días registrados</span><span class="val">${entries.length}</span></div>
@@ -1912,7 +1848,7 @@ function renderHist(){
     const snap = APP.snapshots.find(s=>s.microNum===hViewMicro);
     const prevSnap = APP.snapshots.find(s=>s.microNum===hViewMicro-1);
     if (!snap){
-      cont.innerHTML=`<div style="padding:24px 16px;color:var(--text3);font-size:13px;">No hay datos para M${hViewMicro}.</div>`;return;
+      cont.innerHTML=`<div class="empty" style="margin:0 var(--gut)">No hay datos para M${hViewMicro}.</div>`;return;
     }
     viewSessions=snap.sessions; viewPrev=prevSnap?buildPrevMap(prevSnap.sessions):null;
     viewMn=hViewMicro; isCurrentView=false;
@@ -1931,18 +1867,18 @@ function renderHist(){
       if (cmpCur&&cmpCur.sets.length&&cmpPrev.length){const r=cmpSet(cmpCur.sets[0],cmpPrev[0]); if(r==='up'){tc='up';ti='↑';} if(r==='down'){tc='down';ti='↓';}}
       const hasPrev = prev.length > 0;
       const prevRow = hasPrev
-        ? prev.map(s=>{const k=s.kg!=null?s.kg+'kg':'BW'; return `<span class="mpill">M${viewMn-1}: ${k}×${s.reps}</span>`;}).join('')
-        : `<span style="font-size:11px;color:var(--text3)">Primer registro</span>`;
-      const currRow = ex.sets.map((s,i)=>{const c=hasPrev?cls[i]:''; const k=s.kg!=null?s.kg+'kg':'BW'; return `<span class="mpill ${c}">M${viewMn}: ${k}×${s.reps}${s.type?' '+s.type:''}</span>`;}).join('');
+        ? prev.map(s=>{const k=s.kg!=null?s.kg+'<small>kg</small>':'BW'; return `<span class="mpill">${k}×${s.reps}</span>`;}).join('')
+        : `<span class="first-rec">Primer registro</span>`;
+      const currRow = ex.sets.map((s,i)=>{const c=hasPrev?cls[i]:''; const k=s.kg!=null?s.kg+'<small>kg</small>':'BW'; return `<span class="mpill ${c}">${k}×${s.reps}${s.type?' <small>'+s.type+'</small>':''}</span>`;}).join('');
       const div = document.createElement('div'); div.className='hist-ex';
       div.innerHTML = `<div class="hist-ex-hdr">
         <span class="hex-name">${ex.name}</span>
         <span class="htrend ${hasPrev?tc:'flat'}">${hasPrev?ti+' M'+(viewMn-1)+'→M'+viewMn:'M'+viewMn}</span>
       </div>
-      <table class="hist-table">
+      <div class="table-scroll"><table class="hist-table">
         <tr><td class="mnum">M${viewMn-1}</td><td><div class="sets-row">${prevRow}</div></td></tr>
         <tr><td class="mnum">M${viewMn}${isCurrentView?'↗':''}</td><td><div class="sets-row">${currRow}</div></td></tr>
-      </table>`;
+      </table></div>`;
       cont.appendChild(div);
     });
   });
@@ -1958,18 +1894,37 @@ function setHF(f){hFilter=f; renderHist();}
 // ── DASHBOARD ──────────────────────────────────────────────────
 let CH={};
 function dChart(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
-if (window.Chart){
-  Chart.defaults.font.family = "'Barlow', sans-serif";
-  Chart.defaults.font.size = 10;
-  Chart.defaults.color = '#5c5c70';
-  Object.assign(Chart.defaults.plugins.tooltip, {backgroundColor:'#181822', borderColor:'#33333f',
-    borderWidth:1, titleColor:'#eaeaf2', bodyColor:'#9494a6', padding:9, cornerRadius:8, displayColors:false});
+// Tema de Chart.js a partir de los tokens. Se vuelve a aplicar antes de pintar
+// cualquier gráfico, así siguen al modo claro/oscuro. Sin animación de entrada.
+// Rejilla solo horizontal: las verticales solo ensucian en pantallas de móvil.
+let XY = {}, LEGEND = {};
+function applyChartTheme(){
+  if (!window.Chart) return;
+  const t = theme();
+  Chart.defaults.font.family = "'Barlow', system-ui, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = t.muted;
+  Chart.defaults.borderColor = t.line;
+  Chart.defaults.animation = false;
+  Object.assign(Chart.defaults.plugins.tooltip, {backgroundColor:t.ink, borderColor:t.ink, borderWidth:0,
+    titleColor:t.surface, bodyColor:t.surface, padding:10, cornerRadius:6, displayColors:false,
+    titleFont:{family:"'Barlow', system-ui, sans-serif", weight:'600', size:13},
+    bodyFont:{family:"'Barlow Condensed', system-ui, sans-serif", weight:'600', size:15}});
+  const ticks = {color:t.muted, font:{family:"'Barlow Condensed', system-ui, sans-serif", size:13, weight:'600'}};
+  XY = {x:{grid:{display:false}, border:{color:t.line}, ticks},
+        y:{grid:{color:t.line}, border:{display:false}, ticks}};
+  LEGEND = {display:true, labels:{color:t.muted, font:{size:12}, boxWidth:12, boxHeight:12, padding:10}};
 }
-// Rejilla solo horizontal: las verticales solo ensucian en pantallas de móvil
-const XY={
-  x:{grid:{display:false}, border:{color:'#24242f'}, ticks:{color:'#5c5c70',font:{size:10}}},
-  y:{grid:{color:'#1c1c26'}, border:{display:false}, ticks:{color:'#5c5c70',font:{size:10}}}
-};
+applyChartTheme();
+// Cambio de modo con la app abierta: repinta lo que tenga gráficos
+if (window.matchMedia) {
+  const mq = matchMedia('(prefers-color-scheme: dark)');
+  const onScheme = () => {
+    applyChartTheme();
+    if (document.getElementById('page-dash').classList.contains('active')) renderDash();
+  };
+  if (mq.addEventListener) mq.addEventListener('change', onScheme); else if (mq.addListener) mq.addListener(onScheme);
+}
 // Sustituye un gráfico por un mensaje cuando todavía no hay datos que pintar
 function chartOrEmpty(wrapId, canvasId, hasData, msg){
   const wrap = document.getElementById(wrapId); if (!wrap) return hasData;
@@ -1987,6 +1942,7 @@ function linReg(xs,ys){
   const sl=den?num/den:0,ic=my-sl*mx; return{slope:sl,predict:x=>sl*x+ic};
 }
 function renderDash(){
+  applyChartTheme(); const T = theme();
   const wh=[...HIST_WEIGHT,...APP.wHist], ch=[...HIST_CAL,...APP.cHist];
   // Los micros importados no traen peso/calorías: las series empiezan en M9
   const mOff = HIST_MICROS - HIST_WEIGHT.length;
@@ -2021,8 +1977,8 @@ function renderDash(){
   }
   const realFull=[...wh,...Array(regLine.length?4:0).fill(null)];
   CH['weight']=new Chart(document.getElementById('weight-chart').getContext('2d'),{type:'line',data:{labels:allLabels,datasets:[
-    {data:realFull,borderColor:'#c8f060',backgroundColor:'rgba(200,240,96,.07)',borderWidth:2,pointBackgroundColor:'#c8f060',pointRadius:3,tension:.35,fill:true,spanGaps:true},
-    ...(regLine.length?[{data:regLine,borderColor:'rgba(200,240,96,.45)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.35}]:[]),
+    {data:realFull,borderColor:T.ink,backgroundColor:alpha(T.ink,.06),borderWidth:2,pointBackgroundColor:T.ink,pointRadius:3,tension:.35,fill:true,spanGaps:true},
+    ...(regLine.length?[{data:regLine,borderColor:T.muted,backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:.35}]:[]),
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:XY}});
   }
 
@@ -2033,7 +1989,7 @@ function renderDash(){
   chartOrEmpty('c-wrap','cal-chart',hasC,
     '<b>Sin calorías registradas</b>La media de cada microciclo se calcula al cerrarlo.');
   if (hasC) CH['cal']=new Chart(document.getElementById('cal-chart').getContext('2d'),{type:'bar',
-    data:{labels:wh.map((_,i)=>'M'+(i+1+mOff)),datasets:[{data:ch,backgroundColor:ch.map(c=>c?(c>=APP.calObj?'rgba(76,219,122,.6)':'rgba(200,240,96,.4)'):'rgba(42,42,58,.4)'),borderRadius:4}]},
+    data:{labels:wh.map((_,i)=>'M'+(i+1+mOff)),datasets:[{data:ch,backgroundColor:ch.map(c=>c?(c>=APP.calObj?alpha(T.up,.75):alpha(T.muted,.45)):T.line),borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:XY}});
 
   renderSessCharts(); renderStagAlerts(); renderMuscleVolume(); renderStrength();
@@ -2103,44 +2059,31 @@ function renderSessCharts(){
   for(let i=1;i<=nDone+1;i++) allLabels.push(i===nDone+1?`M${i}↗`:`M${i}`);
   if (!allLabels.length) allLabels.push('M1↗');
 
-  dChart('sess-chart');
-  setTimeout(()=>{
-    const ctx=document.getElementById('sess-chart').getContext('2d');
-    const datasets=Object.keys(combinedProg).map(id=>{
-      const hist=combinedProg[id]; const color=SESS_META[id].color;
-      const full=[...hist, bal[id]!=null?bal[id]:null];
-      return {label:SESS_META[id].name,data:full,borderColor:color,backgroundColor:color+'22',borderWidth:2,pointRadius:3,tension:.35,spanGaps:true,
-        pointBackgroundColor:full.map((v,i)=>i===full.length-1?color:v>0?'#4cdb7a':v<0?'#f0565b':'#4a4a5c')};
-    });
-    CH['sess-chart']=new Chart(ctx,{type:'line',data:{labels:allLabels,datasets},
-      options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:true,labels:{color:'#5c5c70',font:{size:10},boxWidth:11,padding:7}}},
-        scales:{...XY,y:{...XY.y,title:{display:true,text:'Saldo',color:'#4a4a5c',font:{size:10}}}}}});
-  },50);
-
+  // Sin gráfico combinado de 7 líneas: sin colores por sesión no se distinguen,
+  // y las minitarjetas de abajo muestran los mismos datos por separado.
+  const T = theme();
   const grid=document.getElementById('sess-cards'); grid.innerHTML='';
   Object.keys(combinedProg).forEach(id=>{
-    const hist=combinedProg[id]; const color=SESS_META[id].color;
+    const hist=combinedProg[id];
     const full=[...hist, bal[id]!=null?bal[id]:null];
     const latest=bal[id]!=null?bal[id]:(hist.length?hist[hist.length-1]:0);
-    const tc=latest>0?'var(--up)':latest<0?'var(--down)':'var(--text3)';
-    const ti=latest>0?'↑':latest<0?'↓':'→';
+    const tc=latest>0?'up':latest<0?'down':'';
+    const ti=latest>0?'↑':latest<0?'↓':'';
     const cid='sc-'+id;
     const card=document.createElement('div'); card.className='dcard';
-    card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-      <div class="dlabel" style="margin:0">${SESS_META[id].name}</div>
-      <span style="font-size:16px;font-weight:700;color:${tc}">${ti}${Math.abs(latest)}</span></div>
-      <div style="height:68px"><canvas id="${cid}"></canvas></div>`;
+    card.innerHTML=`<div class="sc-head">
+      <div class="dlabel">${SESS_META[id].name}</div>
+      <span class="sc-val ${tc}">${ti}${Math.abs(latest)}</span></div>
+      <div class="chart-wrap mini"><canvas id="${cid}" aria-label="Saldo de ${SESS_META[id].name} por microciclo"></canvas></div>`;
     grid.appendChild(card);
     setTimeout(()=>{
       dChart(cid);
       CH[cid]=new Chart(document.getElementById(cid).getContext('2d'),{type:'bar',
         data:{labels:allLabels,datasets:[{data:full,
-          backgroundColor:full.map(v=>v>0?'rgba(76,219,122,.55)':v<0?'rgba(240,86,91,.55)':'rgba(85,85,106,.4)'),
-          borderColor:full.map(v=>v>0?'#4cdb7a':v<0?'#f0565b':'#4a4a5c'),borderWidth:1,borderRadius:3}]},
+          backgroundColor:full.map(v=>v>0?T.up:v<0?T.down:T.line),borderRadius:3}]},
         options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-          scales:{x:{grid:{display:false},ticks:{color:'#4a4a5c',font:{size:8}}},
-            y:{grid:{color:'#1c1c26'},ticks:{color:'#4a4a5c',font:{size:8},stepSize:1},suggestedMin:-3,suggestedMax:4}}}});
+          scales:{x:{...XY.x,ticks:{...XY.x.ticks,font:{...XY.x.ticks.font,size:11},maxRotation:0,autoSkipPadding:4}},
+            y:{...XY.y,ticks:{...XY.y.ticks,font:{...XY.y.ticks.font,size:11},stepSize:2},suggestedMin:-3,suggestedMax:4}}}});
     },80);
   });
 }
@@ -2152,7 +2095,7 @@ function renderStagAlerts(){
     const sp=combined[id];
     if (sp.length>=3&&sp.slice(-3).every(v=>v<=0)){
       const d=document.createElement('div'); d.className='alert-card';
-      d.innerHTML=`<strong>&#9888;&#65039; ${SESS_META[id].name}</strong>3 micros consecutivos sin mejora neta`;
+      d.innerHTML=`<strong>${SESS_META[id].name}</strong>3 micros consecutivos sin mejora neta`;
       cont.appendChild(d);
     }
   });
@@ -2284,12 +2227,12 @@ function renderStrength(){
   chartOrEmpty('ton-wrap','ton-chart',hasTon,
     '<b>Sin tonelaje que mostrar</b>Aparece en cuanto haya series con kg y repeticiones numéricas.');
   if (hasTon){
+    const T = theme();
     dChart('ton');
     CH['ton'] = new Chart(document.getElementById('ton-chart').getContext('2d'),{type:'bar',
       data:{labels:ton.map(p=>'M'+p.m+(p.m===APP.microNum?'↗':'')),
         datasets:[{data:ton.map(p=>p.t),borderRadius:4,
-          backgroundColor:ton.map(p=>p.m>=startNew?'rgba(200,240,96,.5)':'rgba(96,208,240,.32)'),
-          borderColor:ton.map(p=>p.m>=startNew?'#c8f060':'#60d0f0'),borderWidth:1}]},
+          backgroundColor:ton.map(p=>p.m>=startNew?alpha(T.ink,.8):alpha(T.muted,.4))}]},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:false},tooltip:{callbacks:{
           label:c=>c.parsed.y.toLocaleString('es-ES')+' kg levantados'}}},
@@ -2342,21 +2285,22 @@ function openExDetail(id){
       <div><div class="dlabel">Máximo</div><div class="dvalue">${peak}<small>kg</small></div>
         <div class="dsub">${pts.length} microciclos</div></div>
     </div>
-    <div class="chart-wrap" style="height:150px"><canvas id="exd-chart"></canvas></div>
+    <div class="chart-wrap"><canvas id="exd-chart"></canvas></div>
     <div class="ed-sublabel">Mejor serie por microciclo</div>
     <table class="hist-table">${pts.slice().reverse().map(p=>`<tr>
       <td class="mnum">M${p.m}${p.live?'↗':''}</td>
       <td>${p.bkg} kg × ${p.breps}</td>
-      <td style="text-align:right;color:${p.e1rm>=peak?'var(--accent)':'var(--text2)'}">${p.e1rm} kg</td>
+      <td class="num" style="text-align:right;font-size:16px;font-weight:${p.e1rm>=peak?700:600};color:var(--${p.e1rm>=peak?'ink':'muted'})">${p.e1rm} kg</td>
     </tr>`).join('')}</table>
     <div class="ed-hint">Estimación de Epley sobre la mejor serie de cada microciclo. Válida para comparar este ejercicio consigo mismo, no frente a otros.</div>`;
   document.getElementById('ex-detail').classList.add('open');
+  applyChartTheme(); const T = theme();
   setTimeout(()=>{
     dChart('exd-chart');
     CH['exd-chart'] = new Chart(document.getElementById('exd-chart').getContext('2d'),{type:'line',
       data:{labels:pts.map(p=>'M'+p.m),datasets:[{data:pts.map(p=>p.e1rm),
-        borderColor:'#c8f060',backgroundColor:'rgba(200,240,96,.08)',borderWidth:2,
-        pointRadius:3,pointBackgroundColor:pts.map(p=>p.e1rm>=peak?'#c8f060':'#5c5c70'),
+        borderColor:T.ink,backgroundColor:alpha(T.ink,.06),borderWidth:2,
+        pointRadius:pts.map(p=>p.e1rm>=peak?5:3),pointBackgroundColor:pts.map(p=>p.e1rm>=peak?T.ink:T.muted),
         tension:.3,fill:true}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
         tooltip:{callbacks:{label:c=>'e1RM '+c.parsed.y+' kg'}}},scales:XY}});
@@ -2375,14 +2319,14 @@ function renderExerciseEditor(){
   document.getElementById('ed-list').innerHTML = sess.exercises.map((ex,i)=>`
     <div class="ed-ex">
       <div class="ed-ex-top">
-        <input class="ed-name" type="text" value="${esc(ex.name)}" onchange="updateExerciseMeta('${esc(sess.id)}',${i},'name',this.value)"/>
-        <button class="ed-del" onclick="removeExercise('${esc(sess.id)}',${i})" aria-label="Eliminar">&#128465;&#65039;</button>
+        <input class="ed-name" type="text" aria-label="Nombre del ejercicio" value="${esc(ex.name)}" onchange="updateExerciseMeta('${esc(sess.id)}',${i},'name',this.value)"/>
+        <button class="ed-del icon-btn" onclick="removeExercise('${esc(sess.id)}',${i})" aria-label="Eliminar ${esc(ex.name)}">${ICON.trash}</button>
       </div>
       <div class="ed-meta">
-        <select onchange="updateExerciseMeta('${esc(sess.id)}',${i},'muscle',this.value)">
+        <select aria-label="Grupo muscular" onchange="updateExerciseMeta('${esc(sess.id)}',${i},'muscle',this.value)">
           ${MUSCLE_GROUPS.map(m=>`<option value="${m}"${(ex.muscle||'Sin clasificar')===m?' selected':''}>${m}</option>`).join('')}
         </select>
-        <input type="number" min="0" max="5" value="${ex.rir}" onchange="updateExerciseMeta('${esc(sess.id)}',${i},'rir',this.value)" title="RIR"/>
+        <input type="number" inputmode="numeric" min="0" max="5" value="${ex.rir}" onchange="updateExerciseMeta('${esc(sess.id)}',${i},'rir',this.value)" title="RIR" aria-label="RIR"/>
         <span class="ed-sets">${ex.sets.length} series</span>
       </div>
     </div>`).join('');
@@ -2454,6 +2398,7 @@ function renderMuscleVolume(){
     ? `Series semanales &middot; hechas en M${V.micro} vs MEV orientativo &middot; prescritas M${APP.microNum} de referencia`
     : `Series semanales &middot; prescritas M${APP.microNum} vs MEV orientativo`;
 
+  const T = theme();
   const wrap = document.getElementById('vol-chart-wrap');
   wrap.style.height = (labels.length*(V.presc?36:30) + 30) + 'px';
   dChart('vol-chart');
@@ -2461,29 +2406,27 @@ function renderMuscleVolume(){
     type:'bar',
     data:{labels, datasets:[
       {label:V.label, data:actual, borderRadius:3,
-       backgroundColor:labels.map(m => !MEV_TABLE[m] ? 'rgba(136,136,153,.45)'
-         : (totals[m]||0) >= MEV_TABLE[m] ? 'rgba(76,219,122,.6)' : 'rgba(240,86,91,.55)'),
-       borderColor:labels.map(m => !MEV_TABLE[m] ? '#5c5c70'
-         : (totals[m]||0) >= MEV_TABLE[m] ? '#4cdb7a' : '#f0565b'), borderWidth:1},
+       backgroundColor:labels.map(m => !MEV_TABLE[m] ? alpha(T.muted,.55)
+         : (totals[m]||0) >= MEV_TABLE[m] ? T.up : T.down)},
       ...(V.presc ? [{label:'Prescritas M'+APP.microNum, data:labels.map(m => V.presc[m]||0), borderRadius:3,
-       backgroundColor:'rgba(96,208,240,.14)', borderColor:'rgba(96,208,240,.55)', borderWidth:1}] : []),
+       backgroundColor:'transparent', borderColor:T.ink, borderWidth:1.5}] : []),
       {label:'MEV orientativo', data:mevData, borderRadius:3,
-       backgroundColor:'rgba(42,42,58,.85)', borderColor:'#33333f', borderWidth:1},
+       backgroundColor:T.line},
     ]},
     options:{indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:true, labels:{color:'#5c5c70', font:{size:10}, boxWidth:11, padding:7}}},
+      plugins:{legend:LEGEND},
       scales:{
-        x:{grid:{color:'#1c1c26'}, ticks:{color:'#5c5c70', font:{size:10}},
-           title:{display:true, text:'series / semana', color:'#4a4a5c', font:{size:10}}},
-        y:{grid:{display:false}, ticks:{color:'#5c5c70', font:{size:10}}}}}});
+        x:{grid:{color:T.line}, border:{display:false}, ticks:XY.y.ticks,
+           title:{display:true, text:'series / semana', color:T.muted, font:{size:12}}},
+        y:{grid:{display:false}, border:{color:T.line}, ticks:{color:T.ink, font:{size:13}}}}}});
 
   const gaps = withMev.filter(m => (totals[m]||0) < MEV_TABLE[m]);
   const el = document.getElementById('vol-gaps');
   if (!gaps.length){
-    el.innerHTML = `<div class="vol-gap"><strong>Sin huecos</strong>Todos los grupos con umbral definido llegan a su MEV orientativo.</div>`;
+    el.innerHTML = `<div class="vol-gap ok"><strong>Sin huecos</strong>Todos los grupos con umbral definido llegan a su MEV orientativo.</div>`;
     return;
   }
-  el.innerHTML = `<div class="vol-gap"><strong>&#9888;&#65039; Por debajo del MEV orientativo</strong>`
+  el.innerHTML = `<div class="vol-gap"><strong>Por debajo del MEV orientativo</strong>`
     + `<div class="vol-list">` + gaps.map(m => {
         const v = totals[m]||0, t = MEV_TABLE[m];
         const pct = Math.min(100, Math.round(v/t*100));
@@ -2855,6 +2798,13 @@ function initMicroPage(){
 
 // Tras migrar a la v3 la Bilbo pendiente toma su carga sugerida
 if (MIGRATED_V3 && bilboRefill()) save();
+// Teclado: Intro y Espacio activan los elementos con role="button" que no son <button>
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && t.getAttribute && t.getAttribute('role') === 'button' && t.tagName !== 'BUTTON'){
+    e.preventDefault(); t.click();
+  }
+});
 initMicroPage();
 registerSW();
 if (MIGRATION_NOTES.length) setTimeout(()=>showToast('Actualizado: ' + MIGRATION_NOTES[MIGRATION_NOTES.length-1]), 600);
