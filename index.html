@@ -1323,7 +1323,7 @@ function bilboRefill(skipSid){
     const ex = sess.exercises.find(e => e.id === BILBO[sid]);
     const set = ex && ex.sets[0]; if (!set || set.done) return;
     const a = R.slots[APP.microNum + ':' + sid]; if (!a || a.kg == null) return;
-    const reps = a.phase === 'cycle' ? (a.beat ? a.beat.reps + 1 : R.cfg.threshold)
+    const reps = a.phase === 'cycle' ? Math.max(a.beat ? a.beat.reps + 1 : 0, R.cfg.threshold)
                : a.phase === 'transition' ? R.cfg.transitionReps : set.reps;
     if (set.kg !== a.kg || set.reps !== reps){ set.kg = a.kg; set.reps = reps; changed = true; }
   });
@@ -1527,7 +1527,8 @@ function bilboCard(sess, ex, ei, R){
   if (a.phase === 'cycle'){
     sug = a.kg;
     obj = a.beat ? '&gt; ' + a.beat.reps : '&ge; ' + cfg.threshold;
-    objSub = a.beat ? `con ${a.kg} kg en ciclo ${a.beat.cycle}` : `para subir ${cfg.step} kg`;
+    objSub = a.beat ? `con ${a.kg} kg en ciclo ${a.beat.cycle}` + (a.beat.reps + 1 < cfg.threshold ? ` · ≥ ${cfg.threshold} para subir` : '')
+                    : `para subir ${cfg.step} kg`;
   } else if (a.phase === 'transition'){
     sug = a.kg; obj = '3–5'; objSub = `RIR 1–2 · ${cfg.transitionReps} reps → +${cfg.step} kg`;
   } else if (a.phase === 'test'){
