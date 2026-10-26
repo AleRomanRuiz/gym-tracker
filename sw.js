@@ -3,12 +3,16 @@
  * Rutas relativas a propósito: en GitHub Pages la app cuelga de /<repo>/, no de
  * la raíz, así que cualquier ruta absoluta rompería el registro y la caché.
  *
- * Al tocar index.html hay que subir VERSION: es lo que dispara el borrado de la
- * caché vieja en 'activate' y el aviso de recarga en la app.
+ * En cada despliegue que toque cualquier archivo hay que subir CACHE_VERSION:
+ * el navegador solo instala un service worker nuevo si sw.js cambia byte a byte,
+ * y es la instalación la que vuelve a descargar el shell y dispara el aviso de
+ * recarga en la app. Las cachés solo guardan archivos de la app; los datos del
+ * usuario viven en localStorage y ningún cambio de versión los toca.
  */
-const VERSION    = 'bulk26-v1';
-const SHELL      = VERSION + '-shell';
-const FONTS      = VERSION + '-fonts';
+const CACHE_VERSION = 'bulk26-v2';
+const CACHE_PREFIX  = 'bulk26-';
+const SHELL         = CACHE_VERSION + '-shell';
+const FONTS         = CACHE_VERSION + '-fonts';
 const SHELL_URLS = [
   './',
   './index.html',
@@ -24,7 +28,10 @@ self.addEventListener('install', e => {
     caches.open(SHELL)
       // addAll es atómico: si un recurso falla no se instala nada. Se piden de
       // uno en uno para que un 404 puntual no deje la app sin caché entera.
-      .then(c => Promise.all(SHELL_URLS.map(u => c.add(u).catch(() => null))))
+      // cache:'reload' salta la caché HTTP (GitHub Pages da max-age=600): sin
+      // esto una versión recién subida podía guardarse con el index anterior.
+      .then(c => Promise.all(SHELL_URLS.map(u =>
+        c.add(new Request(u, {cache: 'reload'})).catch(() => null))))
       .then(() => self.skipWaiting())
   );
 });
@@ -32,7 +39,11 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(ks => Promise.all(ks.filter(k => !k.startsWith(VERSION)).map(k => caches.delete(k))))
+      // Solo cachés propias y de otra versión: en <usuario>.github.io todos los
+      // repos comparten origen, y por tanto también Cache Storage.
+      .then(ks => Promise.all(ks
+        .filter(k => k.startsWith(CACHE_PREFIX) && k !== SHELL && k !== FONTS)
+        .map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -71,8 +82,12 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(req)
         .then(res => {
-          const copy = res.clone();
-          caches.open(SHELL).then(c => c.put('./index.html', copy));
+          // Un 404 o 5xx (p. ej. a mitad de un despliegue) no debe sustituir al
+          // index que sirve la app sin conexión.
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(SHELL).then(c => c.put('./index.html', copy));
+          }
           return res;
         })
         .catch(() => caches.match('./index.html', {ignoreSearch: true})
@@ -81,7 +96,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Estáticos propios: caché primero, que no cambian sin subir VERSION.
+  // Estáticos propios: caché primero, que no cambian sin subir CACHE_VERSION.
   e.respondWith(
     caches.match(req).then(hit => hit || fetch(req).then(res => {
       if (res && res.ok && res.type === 'basic') {
