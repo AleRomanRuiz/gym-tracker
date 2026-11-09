@@ -949,6 +949,8 @@ function defaultApp(){
     calObj: 2500,
     wHist: [],
     cHist: [],
+    sHist: [],
+    actHist: [],
     sessProg: emptySessProg(),
     goals: {w:null, c:null},
     sessions: null,
@@ -1731,6 +1733,54 @@ function toggleSetDone(sid, ei, si, evt){
 }
 
 // ── LOG DIARIO ─────────────────────────────────────────────────
+// Entrada: {w, c, s?, act?, actMin?, date?}. Todo lo nuevo es opcional y las
+// entradas antiguas ({w, c}) siguen valiendo tal cual.
+//   s       pasos del día tal como los cuenta el móvil (entero 0-100000)
+//   act     clave de ACTS o null (día registrado sin actividad)
+//   actMin  minutos (entero 1-600), solo si act no es null
+//   date    fecha local YYYY-MM-DD fijada al crear la entrada
+// La actividad nunca se convierte en pasos: ni se suman ni se estiman.
+const ACTS = {padel:'Pádel', baloncesto:'Baloncesto', futbol:'Fútbol'};
+const STEPS_GOAL_DEFAULT = 10000;
+// El 10000 por defecto no se guarda: goals.s solo existe si se fija a mano
+function stepsGoal(){
+  const g = APP.goals && APP.goals.s;
+  return Number.isInteger(g) && g > 0 ? g : STEPS_GOAL_DEFAULT;
+}
+// Fecha local, no toISOString(): eso es UTC y a las 00:30 en España da el día anterior
+function localDate(d){
+  d = d || new Date(); const p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
+function hasAct(e){return isObj(e) && Object.prototype.hasOwnProperty.call(ACTS, e.act);}
+function stepsOf(e){return isObj(e) && Number.isInteger(e.s) ? e.s : null;}
+// Media de pasos solo de los días SIN actividad: un día de pádel deja pocos
+// pasos contados y bajaría la media sin que haya habido menos movimiento.
+function stepsAvg(entries){
+  const v = entries.filter(e => !hasAct(e)).map(stepsOf).filter(s => s !== null);
+  return v.length ? Math.round(v.reduce((a,b)=>a+b,0) / v.length) : null;
+}
+function actSummary(entries){
+  const a = entries.filter(hasAct);
+  return {n:a.length, min:a.reduce((t,e) => t + (Number.isInteger(e.actMin) ? e.actMin : 0), 0)};
+}
+// true = objetivo de actividad cumplido (actividad o pasos >= objetivo);
+// false = pasos por debajo sin actividad; null = no hay con qué decidir
+function dayGoalMet(e){
+  if (hasAct(e)) return true;
+  const s = stepsOf(e);
+  return s === null ? null : s >= stepsGoal();
+}
+function padHist(arr, n){while (arr.length < n) arr.push(null);}
+// Entero dentro de [lo, hi] a partir del texto de un input:
+// {empty:true} si está vacío, {err:true} si no vale, {v} si vale
+function intIn(str, lo, hi){
+  str = String(str == null ? '' : str).trim();
+  if (str === '') return {empty:true};
+  if (!/^\d+$/.test(str)) return {err:true};
+  const n = Number(str);
+  return n < lo || n > hi ? {err:true} : {v:n};
+}
 function logMetrics(){
   const w = parseFloat(document.getElementById('bw-input').value);
   const c = parseInt(document.getElementById('cal-input').value);
@@ -1802,7 +1852,17 @@ function confirmClose(){
   const avgC = cs.length ? Math.round(cs.reduce((a,b)=>a+b,0)/cs.length) : null;
   const newCal = parseInt(document.getElementById('co-cal').value)||APP.calObj;
   const bal = calcBalance();
-  APP.snapshots.push({microNum:APP.microNum, sessions:JSON.parse(JSON.stringify(sessions))});
+  // El log diario se archiva íntegro en el snapshot antes de vaciarlo: hasta la
+  // fase 4 los días sueltos se perdían en cada cierre y solo quedaban medias.
+  APP.snapshots.push({microNum:APP.microNum, sessions:JSON.parse(JSON.stringify(sessions)),
+                      log:JSON.parse(JSON.stringify(APP.log))});
+  // sHist/actHist van alineados por índice con wHist (índice i = micro i+1).
+  // Los micros cerrados antes de existir se rellenan con null («no se
+  // registraba»), que no es lo mismo que {n:0}. Se rellena antes del push.
+  if (!Array.isArray(APP.sHist)) APP.sHist = [];
+  if (!Array.isArray(APP.actHist)) APP.actHist = [];
+  padHist(APP.sHist, APP.wHist.length); padHist(APP.actHist, APP.wHist.length);
+  APP.sHist.push(stepsAvg(entries)); APP.actHist.push(actSummary(entries));
   APP.wHist.push(avgW); APP.cHist.push(avgC);
   Object.keys(APP.sessProg).forEach(id => APP.sessProg[id].push(bal[id]||0));
   const np = {}; sessions.forEach(s=>s.exercises.forEach(ex=>{np[ex.id]=ex.sets.map(({done, doneAt, ...s})=>s);}));
@@ -2443,7 +2503,9 @@ function quickEditLog(){
   const w=parseFloat(document.getElementById('eq-w').value);
   const c=parseInt(document.getElementById('eq-c').value);
   if (!day){document.getElementById('eq-status').textContent='Introduce un día (ej: D3)';return;}
-  APP.log[day]={w:w||null,c:c||null};
+  // Mezcla, no sustituye: pasos, actividad y fecha del día se conservan.
+  // Un día creado desde aquí no lleva fecha (es pasado y no se sabe cuál).
+  APP.log[day]=Object.assign({}, isObj(APP.log[day]) ? APP.log[day] : {}, {w:w||null,c:c||null});
   save(); renderLogList(); renderStats();
   document.getElementById('eq-status').textContent=`${day} guardado ✓`;
   document.getElementById('eq-day').value=''; document.getElementById('eq-w').value=''; document.getElementById('eq-c').value='';
@@ -2459,10 +2521,14 @@ function exportData(){
 // ── COPIA COMPLETA EN ARCHIVO ──────────────────────────────────
 // El archivo envuelve b26v2 sin tocar una sola clave: `data` es el objeto
 // guardado tal cual y el resto son metadatos para validar al importar.
-// schemaVersion: 1 = datos anteriores a la v3; 2 = datos v3 (Bilbo, tobillo).
+// schemaVersion: 1 = datos anteriores a la v3; 2 = datos v3 (Bilbo, tobillo);
+// 3 = v3 + pasos/actividad en el log, snapshot.log, sHist y actHist.
 // Sube para que una versión vieja de la app rechace un archivo que no entiende.
-// Al importar un 1 se escribe tal cual y la migración v3 corre al recargar.
-const EXPORT_SCHEMA_VERSION = 2;
+// El 3 no cambia la estructura (dataVersion sigue en 3), pero una app de schema
+// 2 lo aceptaría y al cerrar el micro vaciaría el log sin archivarlo.
+// Al importar un 1 se escribe tal cual y la migración v3 corre al recargar;
+// un 2 entra sin más: los campos nuevos son opcionales.
+const EXPORT_SCHEMA_VERSION = 3;
 function buildExport(){
   const raw = localStorage.getItem('b26v2');
   if (raw === null) return null;
@@ -2542,10 +2608,14 @@ function validateAppData(d){
     if (!Array.isArray(d.snapshots)) err.push('snapshots no es una lista');
     else d.snapshots.forEach((sn, i) => {
       if (!isObj(sn) || !Number.isInteger(sn.microNum)) err.push('snapshots['+i+'] sin microNum');
-      else checkSessions(sn.sessions, 'snapshots['+i+'].sessions', err);
+      else {
+        checkSessions(sn.sessions, 'snapshots['+i+'].sessions', err);
+        if (sn.log !== undefined && !isObj(sn.log)) err.push('snapshots['+i+'].log no es un objeto');
+      }
     });
   }
-  ['wHist','cHist'].forEach(k => {
+  if (isObj(d.log) && !Object.values(d.log).every(isObj)) err.push('log tiene entradas que no son objetos');
+  ['wHist','cHist','sHist','actHist'].forEach(k => {
     if (d[k] !== undefined && !Array.isArray(d[k])) err.push(k+' no es una lista');
   });
   ['prevMicro','log','goals','sessProg'].forEach(k => {
@@ -2758,7 +2828,7 @@ function resetTraining(){
     '  · Las comparaciones de progreso',
     '  · Los kilos de todas las series actuales',
   ];
-  if (conMetricas) lineas.push('  · El histórico de peso corporal y calorías');
+  if (conMetricas) lineas.push('  · El histórico de peso corporal, calorías, pasos y actividad');
   lineas.push('', 'Se conservan sesiones, ejercicios, series, repeticiones y RIR.', '',
               'Esta acción no se puede deshacer desde la interfaz. ¿Continuar?');
   if (!confirm(lineas.join('\n'))) return;
@@ -2773,7 +2843,8 @@ function resetTraining(){
   APP.sessProg  = emptySessProg();
   APP.log = {}; APP.dayCount = 0;
   APP.bilbo.events = [];   // anclados a micros que dejan de existir
-  if (conMetricas){ APP.wHist = []; APP.cHist = []; }
+  // sHist/actHist siguen a wHist: van alineados por índice
+  if (conMetricas){ APP.wHist = []; APP.cHist = []; APP.sHist = []; APP.actHist = []; }
   // Si se conserva la serie de peso, la numeración sigue donde estaba: cada
   // entrada de wHist corresponde a un microciclo cerrado y volver a M1 dejaría
   // dos microciclos distintos compartiendo etiqueta en los gráficos.
