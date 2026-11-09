@@ -16,8 +16,29 @@ fiable en standalone, la app se reanuda sin recargar, sin botón de recargar).
   `b26v2_backup_preimport`, `b26v2_backup_pre_v3`. No se sobrescriben los de
   migración.
 - `APP.dataVersion` versiona la estructura (3 = Bilbo + tobillo);
-  `EXPORT_SCHEMA_VERSION` el sobre del archivo exportado. El importador debe
-  seguir aceptando exportaciones antiguas.
+  `EXPORT_SCHEMA_VERSION` el sobre del archivo exportado (3 = pasos y
+  actividad). El importador debe seguir aceptando exportaciones antiguas.
+
+## Log diario, pasos y actividad (fase 4)
+
+- Entrada de `log` (`"D1"`, `"D2"`…): `{w, c, s?, act?, actMin?, date?}`.
+  `s` pasos tal como los cuenta el móvil (entero 0-100000); `act` es
+  `"padel" | "baloncesto" | "futbol" | null`; `actMin` (1-600) solo si hay
+  `act`; `date` es la fecha local `YYYY-MM-DD` fijada al crear la entrada.
+  Todo opcional: las entradas `{w, c}` antiguas siguen siendo válidas.
+- **La actividad nunca se convierte en pasos**: ni se suman ni se estiman.
+  Un día con actividad cuenta como objetivo cumplido aunque tenga menos pasos
+  que `goals.s` (10000 por defecto, que no se guarda). Lo que no se cumple no
+  se pinta con `--down`.
+- Al cerrar el micro, **antes de vaciar `log`**, se copia íntegro en
+  `snapshot.log`. Además de `wHist`/`cHist` se guardan `sHist` (media de pasos
+  de los días SIN actividad; `null` si no hay) y `actHist` (`{n, min}`).
+- `sHist` y `actHist` van **alineados por índice con `wHist`** (índice i =
+  micro i+1). Antes de añadir se rellenan con `null` hasta `wHist.length`:
+  `null` es «no se registraba», distinto de `{n:0, min:0}`. Lo que vacíe
+  `wHist` vacía también estos dos.
+- Edición de un día (`quickEditLog`): mezcla con la entrada existente, nunca la
+  sustituye (si no, se pierden pasos, actividad y fecha).
 
 ## Datos reales y repo público
 
