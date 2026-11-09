@@ -320,6 +320,9 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1;}
 .chart-wrap{position:relative;height:160px;margin-top:8px;}
 .chart-wrap.tall{height:210px;}
 .chart-wrap.mini{height:72px;margin-top:4px;}
+.chart-wrap.short{height:112px;margin-top:2px;}
+.chart-cap{margin-top:12px;}
+#act-empty[hidden]{display:none;}
 canvas{max-width:100%;}
 .legend{display:flex;gap:12px;font-size:12px;color:var(--muted);}
 .ldot{display:inline-block;width:14px;height:0;margin-right:5px;vertical-align:middle;border-top:2px solid var(--ink);}
@@ -562,6 +565,11 @@ canvas{max-width:100%;}
       <div class="prog-wrap"><div class="prog-bar" id="gc-bar" style="width:0%"></div></div>
       <div class="goal-eta" id="gc-eta"></div>
     </div>
+    <div class="dcard stack">
+      <div class="dlabel">Objetivo de pasos diarios</div>
+      <div class="goal-row"><span class="goal-lbl" id="gs-label">10.000</span><input class="goal-inp" id="gs-input" type="number" inputmode="numeric" min="1" max="100000" step="1" placeholder="p. ej. 10000" aria-label="Objetivo de pasos diarios"/><button class="goal-save" onclick="saveGoal('s')">Fijar</button></div>
+      <div class="goal-eta" id="gs-eta"></div>
+    </div>
   </section>
   <section class="dash-sec">
     <h2 class="dash-title">Calorías</h2>
@@ -569,6 +577,28 @@ canvas{max-width:100%;}
       <div class="dcard"><div class="dlabel">Media del último micro</div><div class="dvalue" id="d-cals">—</div><div class="dsub">kcal/día</div></div>
       <div class="dcard"><div class="dlabel">Objetivo actual</div><div class="dvalue" id="d-calobj">—</div><div class="dsub">kcal/día</div></div>
       <div class="dcard wide"><div class="dlabel">Calorías por micro</div><div class="chart-wrap" id="c-wrap"><canvas id="cal-chart"></canvas></div></div>
+    </div>
+  </section>
+  <section class="dash-sec">
+    <h2 class="dash-title">Pasos y actividad</h2>
+    <div class="dcard">
+      <div class="dlabel dlabel-row">
+        <span>Pasos medios · días sin actividad</span>
+        <span class="legend"><span><span class="ldot proj"></span>Objetivo</span></span>
+      </div>
+      <div class="dvalue" id="d-steps">—</div><div class="dsub" id="d-steps-sub"></div>
+      <div class="chart-wrap" id="s-wrap"><canvas id="steps-chart"></canvas></div>
+    </div>
+    <div class="dcard stack">
+      <div class="dlabel">Actividad · pádel, baloncesto y fútbol</div>
+      <div class="dvalue" id="d-act">—</div><div class="dsub" id="d-act-sub"></div>
+      <div id="act-charts">
+        <div class="dsub chart-cap">Días con actividad por micro</div>
+        <div class="chart-wrap short"><canvas id="actd-chart"></canvas></div>
+        <div class="dsub chart-cap">Minutos por micro</div>
+        <div class="chart-wrap short"><canvas id="actm-chart"></canvas></div>
+      </div>
+      <div class="empty" id="act-empty" hidden><b>Sin actividad archivada</b>Los días y minutos de cada microciclo se guardan al cerrarlo.</div>
     </div>
   </section>
   <section class="dash-sec">
@@ -698,7 +728,7 @@ d.sessions[0].exercises.forEach((e,i) => console.log(i, e.name));</div>
       <div class="sep"></div>
       <div class="btn-row">
         <button class="btn btn-secondary" onclick="exportSetsCSV()">Series CSV</button>
-        <button class="btn btn-secondary" onclick="exportMetricsCSV()">Peso y kcal CSV</button>
+        <button class="btn btn-secondary" onclick="exportMetricsCSV()">Métricas CSV</button>
       </div>
       <div class="hint">Separador <b>;</b> y decimal <b>.</b>: Excel lo abre con doble clic; en pandas, <code>sep=';'</code>.</div>
       <div class="sep"></div>
@@ -2108,7 +2138,71 @@ function renderDash(){
     data:{labels:wh.map((_,i)=>'M'+(i+1+mOff)),datasets:[{data:ch,backgroundColor:ch.map(c=>c?(c>=APP.calObj?alpha(T.up,.75):alpha(T.muted,.45)):T.line),borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:XY}});
 
+  renderStepsAct();
   renderSessCharts(); renderStagAlerts(); renderMuscleVolume(); renderStrength();
+}
+// sHist/actHist alineados con APP.wHist y de su misma longitud: lo que falte
+// (micros cerrados antes de la fase 4, o con una app anterior) es null.
+function histAligned(arr, n){
+  const a = Array.isArray(arr) ? arr.slice(0, n) : [];
+  padHist(a, n); return a;
+}
+function histLabels(){return APP.wHist.map((_, i) => 'M' + (i + 1 + HIST_MICROS));}
+// Eje Y entero (días) sin perder el tema común
+function yInt(){return Object.assign({}, XY.y, {beginAtZero:true, ticks:Object.assign({}, XY.y.ticks, {precision:0})});}
+function renderStepsAct(){
+  const T = theme(), goal = stepsGoal();
+  const cur = Object.values(APP.log).filter(isObj);
+  const sAvg = stepsAvg(cur), act = actSummary(cur);
+  const nDays = cur.filter(e => !hasAct(e) && stepsOf(e) !== null).length;
+  const sv = document.getElementById('d-steps');
+  sv.textContent = sAvg !== null ? fmtInt(sAvg) : '—';
+  // Por debajo del objetivo va en tinta normal: no es un retroceso
+  sv.className = 'dvalue' + (sAvg !== null && sAvg >= goal ? ' up' : '');
+  document.getElementById('d-steps-sub').textContent =
+    `M${APP.microNum} en curso · objetivo ${fmtInt(goal)} · ${nDays} ${nDays === 1 ? 'día' : 'días'}`;
+  document.getElementById('d-act').textContent = act.n + (act.n === 1 ? ' día' : ' días');
+  document.getElementById('d-act-sub').textContent = `M${APP.microNum} en curso · ${act.min} min`;
+
+  // Los gráficos empiezan en el primer micro con datos: los anteriores son
+  // de antes de registrar pasos y solo serían huecos.
+  const n = APP.wHist.length;
+  const sAll = histAligned(APP.sHist, n), aAll = histAligned(APP.actHist, n);
+  const first = [sAll.findIndex(v => v != null), aAll.findIndex(isObj)].filter(i => i >= 0);
+  const from = first.length ? Math.min(...first) : n;
+  const labels = histLabels().slice(from), sh = sAll.slice(from), ah = aAll.slice(from);
+
+  dChart('steps');
+  const hasS = sh.some(v => v != null);
+  chartOrEmpty('s-wrap', 'steps-chart', hasS,
+    '<b>Sin pasos archivados</b>La media de cada microciclo se guarda al cerrarlo, solo con los días sin actividad.');
+  // Objetivo como línea discontinua de borde a borde. Un dataset de línea no
+  // sirve: con un solo micro tiene un único punto y no se dibuja.
+  const goalLine = {id:'goalLine', afterDatasetsDraw(chart){
+    const y = chart.scales.y.getPixelForValue(goal), {left, right} = chart.chartArea, ctx = chart.ctx;
+    ctx.save(); ctx.strokeStyle = T.muted; ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke(); ctx.restore();
+  }};
+  if (hasS) CH['steps'] = new Chart(document.getElementById('steps-chart').getContext('2d'), {type:'bar',
+    data:{labels, datasets:[{label:'Pasos medios', data:sh, borderRadius:4, maxBarThickness:48,
+      backgroundColor:sh.map(v => v == null ? T.line : (v >= goal ? alpha(T.up, .75) : alpha(T.muted, .45)))}]},
+    options:{responsive:true, maintainAspectRatio:false, locale:'es-ES',
+      scales:{x:XY.x, y:Object.assign({}, XY.y, {beginAtZero:true, suggestedMax:goal})},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c => fmtInt(c.raw) + ' pasos · objetivo ' + fmtInt(goal)}}}},
+    plugins:[goalLine]});
+
+  dChart('actd'); dChart('actm');
+  const hasA = ah.some(a => isObj(a));
+  document.getElementById('act-charts').hidden = !hasA;
+  document.getElementById('act-empty').hidden = hasA;
+  if (!hasA) return;
+  const bar = (id, data, unit) => new Chart(document.getElementById(id).getContext('2d'), {type:'bar',
+    data:{labels, datasets:[{data, backgroundColor:alpha(T.ink, .7), borderRadius:4, maxBarThickness:48}]},
+    options:{responsive:true, maintainAspectRatio:false, locale:'es-ES', scales:{x:XY.x, y:yInt()},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c => c.raw + ' ' + unit}}}}});
+  CH['actd'] = bar('actd-chart', ah.map(a => isObj(a) ? a.n : null), 'días');
+  CH['actm'] = bar('actm-chart', ah.map(a => isObj(a) ? a.min : null), 'min');
 }
 function renderGoals(lastW,lastC,realW){
   const g=APP.goals;
@@ -2150,8 +2244,23 @@ function renderGoals(lastW,lastC,realW){
     document.getElementById('gc-bar').style.width='0%';
     document.getElementById('gc-eta').textContent='';
   }
+  renderStepsGoal();
+}
+function renderStepsGoal(){
+  const own = Number.isInteger(APP.goals.s);
+  document.getElementById('gs-input').value = own ? APP.goals.s : '';
+  document.getElementById('gs-label').textContent = fmtInt(stepsGoal());
+  document.getElementById('gs-eta').textContent = (own ? '' : 'Valor por defecto. ')
+    + 'Un día de pádel, baloncesto o fútbol cuenta como cumplido aunque queden menos pasos.';
 }
 function saveGoal(type){
+  if (type === 's'){
+    const r = intIn(document.getElementById('gs-input').value, 1, 100000);
+    if (!('v' in r)){showToast('Introduce un número entero de pasos'); return;}
+    APP.goals.s = r.v; save();
+    renderStepsGoal(); renderStepsAct(); renderLogList();
+    showToast('Objetivo guardado ✓'); return;
+  }
   const v=type==='w'?parseFloat(document.getElementById('gw-input').value):parseInt(document.getElementById('gc-input').value);
   if (!v){showToast('Introduce un valor válido');return;}
   APP.goals[type]=v; save();
@@ -2855,20 +2964,34 @@ function exportSetsCSV(){
   volcar(APP.microNum, sessions, true);
   csvDownload('bulk26_series.csv', filas);
 }
+// Dos tablas: medias por micro cerrado y, debajo, los días sueltos (los
+// archivados en snapshot.log desde la fase 4 y los del micro en curso).
+// La actividad va con su clave (padel, baloncesto, futbol), que no lleva tildes.
 function exportMetricsCSV(){
-  const filas = [['micro','peso_medio_kg','calorias_medias_kcal']];
+  const filas = [['micro','peso_medio_kg','calorias_medias_kcal',
+                  'pasos_medios_sin_actividad','dias_actividad','minutos_actividad']];
   const wh = [...HIST_WEIGHT, ...APP.wHist], ch = [...HIST_CAL, ...APP.cHist];
-  const off = HIST_MICROS - HIST_WEIGHT.length;
-  wh.forEach((w,i) => filas.push([i+1+off, w==null?'':w, ch[i]==null?'':ch[i]]));
-  // el micro en curso todavía no tiene media cerrada: van los días sueltos
-  const dias = Object.entries(APP.log);
+  const off = HIST_MICROS - HIST_WEIGHT.length, hOff = HIST_WEIGHT.length;
+  const sh = histAligned(APP.sHist, APP.wHist.length), ah = histAligned(APP.actHist, APP.wHist.length);
+  wh.forEach((w,i) => {
+    const s = i >= hOff ? sh[i-hOff] : null, a = i >= hOff ? ah[i-hOff] : null;
+    filas.push([i+1+off, w==null?'':w, ch[i]==null?'':ch[i],
+                s==null?'':s, isObj(a)?a.n:'', isObj(a)?a.min:'']);
+  });
+  const ord = log => Object.entries(isObj(log) ? log : {}).filter(([,v]) => isObj(v))
+    .sort((a,b)=>parseInt(a[0].slice(1))-parseInt(b[0].slice(1)));
+  const dias = [];
+  (APP.snapshots||[]).slice().sort((a,b)=>a.microNum-b.microNum)
+    .forEach(sn => ord(sn.log).forEach(([d,v]) => dias.push([sn.microNum, 0, d, v])));
+  ord(APP.log).forEach(([d,v]) => dias.push([APP.microNum, 1, d, v]));
   if (dias.length){
     filas.push([]);
-    filas.push(['micro_en_curso','dia','peso_kg','calorias_kcal']);
-    dias.sort((a,b)=>parseInt(a[0].slice(1))-parseInt(b[0].slice(1)))
-        .forEach(([d,v]) => filas.push([APP.microNum, d, v.w==null?'':v.w, v.c==null?'':v.c]));
+    filas.push(['micro','en_curso','dia','fecha','peso_kg','calorias_kcal','pasos','actividad','minutos_actividad']);
+    dias.forEach(([m, live, d, v]) => filas.push([m, live, d, v.date||'',
+      v.w==null?'':v.w, v.c==null?'':v.c, stepsOf(v) ?? '',
+      hasAct(v) ? v.act : '', hasAct(v) && Number.isInteger(v.actMin) ? v.actMin : '']));
   }
-  csvDownload('bulk26_peso_calorias.csv', filas);
+  csvDownload('bulk26_metricas.csv', filas);
 }
 
 // ── REINICIO ───────────────────────────────────────────────────
