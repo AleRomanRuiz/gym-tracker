@@ -172,16 +172,24 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1;}
 
 /* ── Registro diario ──────────────────────────────────────────── */
 .bw-row{display:flex;gap:8px;padding:0 var(--gut) 8px;}
-.bw-inp{flex:1;min-width:0;}
-.bw-inp.kcal{flex:0 0 112px;}
+/* Peso, kcal y pasos a partes iguales: con 375 px quedan ~94 px por campo */
+.bw-inp{flex:1 1 0;min-width:0;}
+/* Actividad: chips de selección única (mismo estilo que los filtros del
+   Histórico; la elegida en --ink, el acento no se usa aquí) */
+.act-row{display:flex;flex-wrap:wrap;gap:6px;padding:0 var(--gut) 8px;}
+.act-min{display:flex;padding:0 var(--gut) 8px;}
+.act-min[hidden]{display:none;}
 .bw-btn{flex:none;width:var(--tap);padding:0;}
 .log-list{margin:0 var(--gut) 8px;border-radius:var(--r-card);background:var(--surface);display:none;overflow:hidden;}
 .log-head{padding:10px 16px 2px;font-size:13px;color:var(--muted);}
 .log-entry{display:flex;align-items:center;gap:8px;padding:0 4px 0 16px;border-bottom:1px solid var(--line);}
 .log-entry:last-child{border-bottom:none;}
 .log-day{min-width:34px;font-size:13px;font-weight:600;color:var(--muted);}
-.log-vals{flex:1;display:flex;gap:14px;font-size:17px;font-weight:600;}
+.log-vals{flex:1;display:flex;flex-wrap:wrap;gap:2px 14px;padding:6px 0;font-size:17px;font-weight:600;}
 .log-vals small{font:400 13px var(--f-text);color:var(--muted);margin-left:2px;}
+/* Pasos bajo el objetivo en un día sin actividad: en --muted, nunca --down */
+.log-s.below{color:var(--muted);}
+.log-goal{flex:none;display:inline-flex;align-items:center;color:var(--up);}
 .log-del,.icon-btn{flex:none;width:var(--tap);height:var(--tap);display:inline-flex;align-items:center;
   justify-content:center;border-radius:var(--r-ctl);color:var(--muted);}
 .log-del:active,.icon-btn:active{background:var(--tint);}
@@ -493,9 +501,14 @@ canvas{max-width:100%;}
   </div>
   <h2 class="sec-label">Registro diario</h2>
   <div class="bw-row">
-    <input class="bw-inp" id="bw-input" type="number" inputmode="decimal" step="0.1" placeholder="Peso corporal (kg)" aria-label="Peso corporal en kg"/>
-    <input class="bw-inp kcal" id="cal-input" type="number" inputmode="numeric" placeholder="Kcal" aria-label="Calorías"/>
+    <input class="bw-inp" id="bw-input" type="number" inputmode="decimal" step="0.1" placeholder="Peso kg" aria-label="Peso corporal en kg"/>
+    <input class="bw-inp" id="cal-input" type="number" inputmode="numeric" placeholder="Kcal" aria-label="Calorías"/>
+    <input class="bw-inp" id="st-input" type="number" inputmode="numeric" min="0" max="100000" step="1" placeholder="Pasos" aria-label="Pasos del día"/>
     <button class="bw-btn" onclick="logMetrics()" aria-label="Registrar día"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+  </div>
+  <div class="act-row" id="act-row" role="radiogroup" aria-label="Actividad del día"></div>
+  <div class="act-min" id="act-min-row" hidden>
+    <input class="bw-inp" id="am-input" type="number" inputmode="numeric" min="1" max="600" step="1" placeholder="Minutos de actividad" aria-label="Minutos de actividad"/>
   </div>
   <div class="log-list" id="log-list"></div>
   <div id="sessions-container"></div>
@@ -1781,15 +1794,54 @@ function intIn(str, lo, hi){
   const n = Number(str);
   return n < lo || n > hi ? {err:true} : {v:n};
 }
+// Actividad elegida en los chips del registro (null = Ninguna). Solo vive en
+// pantalla hasta que se registra el día.
+let LOG_ACT = null;
+function renderActChips(){
+  const opts = [[null, 'Ninguna'], ...Object.entries(ACTS)];
+  document.getElementById('act-row').innerHTML = opts.map(([k, l]) => {
+    const on = LOG_ACT === k;
+    return `<button type="button" class="filt-btn${on?' active':''}" role="radio" aria-checked="${on}" onclick="setLogAct(${k?`'${k}'`:'null'})">${l}</button>`;
+  }).join('');
+  document.getElementById('act-min-row').hidden = !LOG_ACT;
+}
+function setLogAct(k){
+  LOG_ACT = k; renderActChips();
+  if (k) document.getElementById('am-input').focus();
+}
 function logMetrics(){
   const w = parseFloat(document.getElementById('bw-input').value);
   const c = parseInt(document.getElementById('cal-input').value);
-  if (!w && !c){showToast('Introduce peso o calorías'); return;}
-  APP.dayCount++; APP.log['D'+APP.dayCount] = {w:w||null, c:c||null};
+  const s = intIn(document.getElementById('st-input').value, 0, 100000);
+  if (s.err){showToast('Pasos: número entero de 0 a 100000'); return;}
+  let actMin = null;
+  if (LOG_ACT){
+    const m = intIn(document.getElementById('am-input').value, 1, 600);
+    if (!('v' in m)){showToast('Minutos de ' + ACTS[LOG_ACT].toLowerCase() + ': de 1 a 600'); return;}
+    actMin = m.v;
+  }
+  if (!w && !c && s.empty && !LOG_ACT){showToast('Introduce peso, calorías, pasos o actividad'); return;}
+  const e = {w:w||null, c:c||null};
+  if (!s.empty) e.s = s.v;
+  e.act = LOG_ACT;
+  if (LOG_ACT) e.actMin = actMin;
+  e.date = localDate();
+  APP.dayCount++; APP.log['D'+APP.dayCount] = e;
   save();
-  document.getElementById('bw-input').value=''; document.getElementById('cal-input').value='';
+  ['bw-input','cal-input','st-input','am-input'].forEach(id => {document.getElementById(id).value='';});
+  LOG_ACT = null; renderActChips();
   renderLogList(); renderStats(); renderCal();
   showToast('Día '+APP.dayCount+' registrado ✓');
+}
+function fmtInt(n){return Number(n).toLocaleString('es-ES');}
+function logValsHtml(v){
+  const parts = [];
+  if (v.w) parts.push(`<span class="log-w">${v.w}<small>kg</small></span>`);
+  if (v.c) parts.push(`<span class="log-c">${v.c}<small>kcal</small></span>`);
+  const s = stepsOf(v), met = dayGoalMet(v);
+  if (s !== null) parts.push(`<span class="log-s${met===false?' below':''}">${fmtInt(s)}<small>pasos</small></span>`);
+  if (hasAct(v)) parts.push(`<span class="log-a">${ACTS[v.act]}<small>${Number.isInteger(v.actMin)?v.actMin+' min':''}</small></span>`);
+  return parts.join(' ');
 }
 function renderLogList(){
   const el = document.getElementById('log-list');
@@ -1799,7 +1851,8 @@ function renderLogList(){
   el.innerHTML = `<div class="log-head">Entradas de este micro</div>`
     + entries.map(([k,v]) => `<div class="log-entry">
       <span class="log-day">${k}</span>
-      <span class="log-vals">${v.w?`<span class="log-w">${v.w}<small>kg</small></span>`:''} ${v.c?`<span class="log-c">${v.c}<small>kcal</small></span>`:''}</span>
+      <span class="log-vals">${logValsHtml(v)}</span>
+      ${dayGoalMet(v)===true?`<span class="log-goal" role="img" aria-label="Objetivo de actividad cumplido" title="Objetivo de actividad cumplido">${ICON.check}</span>`:''}
       <button class="log-del" onclick="delLog('${k}')" aria-label="Borrar ${k}">${ICON.close}</button>
     </div>`).join('');
 }
@@ -1835,12 +1888,15 @@ function openCloseMicro(){
   const avgW = ws.length ? (ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(2) : null;
   const avgC = cs.length ? Math.round(cs.reduce((a,b)=>a+b,0)/cs.length) : null;
   const bal = calcBalance(); const net = Object.values(bal).reduce((a,b)=>a+b,0);
+  const sAvg = stepsAvg(entries), act = actSummary(entries);
   document.getElementById('co-title').textContent = `Cerrar microciclo ${APP.microNum}`;
   document.getElementById('co-cal').value = APP.calObj;
   document.getElementById('co-summary').innerHTML = `
     <div class="summary-row"><span>Días registrados</span><span class="val">${entries.length}</span></div>
     <div class="summary-row"><span>Peso medio</span><span class="val">${avgW?avgW+' kg':'Sin datos'}</span></div>
     <div class="summary-row"><span>Calorías medias</span><span class="val">${avgC?avgC+' kcal':'Sin datos'}</span></div>
+    <div class="summary-row"><span>Pasos medios (días sin actividad)</span><span class="val">${sAvg!==null?fmtInt(sAvg):'Sin datos'}</span></div>
+    <div class="summary-row"><span>Días con actividad</span><span class="val">${act.n}${act.n?' · '+act.min+' min':''}</span></div>
     <div class="summary-row"><span>Saldo neto</span><span class="val" style="color:${net>=0?'var(--up)':'var(--down)'}">${net>=0?'+':''}${net} ejercicios</span></div>`;
   document.getElementById('close-overlay').classList.add('open');
 }
@@ -2864,7 +2920,7 @@ function resetTraining(){
 function initMicroPage(){
   document.getElementById('micro-title').textContent='Microciclo '+APP.microNum;
   document.getElementById('close-mnum').textContent=APP.microNum;
-  renderCal(); renderStats(); renderSessions(); renderLogList();
+  renderCal(); renderStats(); renderSessions(); renderLogList(); renderActChips();
 }
 
 // Tras migrar a la v3 la Bilbo pendiente toma su carga sugerida
