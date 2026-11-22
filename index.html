@@ -838,8 +838,11 @@ const SCOLORS  = ['push','pull','rd','legs','arm','rd','push','pull','rd','legs'
 const SESS_FILTERS = ['Todos','Empuje 1','Tracción 1','Pierna 1','Brazo','Empuje 2','Tracción 2','Pierna 2','Tobillo'];
 // Versión de la estructura de datos dentro de b26v2 (independiente del split).
 // 3 = serie Bilbo como ejercicio propio + sesión extra de tobillo.
-const DATA_VERSION = 3;
+// 4 = cambios de ejercicios de la fase 5 (wrist roller, remo multipower,
+//     martillo en Brazo, sin hip thrust). Ver V4_CHANGES.
+const DATA_VERSION = 4;
 const PRE_V3_KEY = 'b26v2_backup_pre_v3';
+const PRE_V4_KEY = 'b26v2_backup_pre_v4';
 // Serie Bilbo de press banca: un ejercicio por sesión de empuje. E2 conserva el
 // id del ejercicio custom que ya tenía historial; E1 estrena id porque antes
 // vivía como sets[0] (topset) de press_banca.
@@ -876,8 +879,7 @@ const SEED_SESSIONS = [
     {id:'crunch_polea_b1', name:'Crunch abdominal polea', obs:'Núcleo — también válido en Tracción 1', rir:1, muscle:'Abdomen', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
     {id:'dragon_flag_b1', name:'Dragon flag', obs:'Núcleo — también válido en Tracción 1', rir:1, muscle:'Abdomen', sets:[{kg:null,reps:6,type:''},{kg:null,reps:6,type:''}]},
     {id:'pallof_b1', name:'Pallof press polea', obs:'Núcleo — también válido en Tracción 1', rir:1, muscle:'Abdomen', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
-    {id:'flex_ante_b1', name:'Flexores antebrazo polea', obs:'Núcleo — también válido en Tracción 1', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
-    {id:'ext_ante_b1', name:'Extensores antebrazo polea', obs:'Núcleo — también válido en Tracción 1', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
+    {id:'wrist_roller_b1', name:'Wrist roller', obs:'Rep = subida completa + bajada controlada. Alterna el sentido de giro entre series', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:1,type:''},{kg:null,reps:1,type:''},{kg:null,reps:1,type:''}]},
   ]},
   {id:'traccion1', name:'Tracción 1', tag:'Espalda · Bíceps', exercises:[
     {id:'remo_t_simulado', name:'Remo en T simulado', obs:'', rir:1, muscle:'Espalda', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:8,type:''}]},
@@ -893,20 +895,18 @@ const SEED_SESSIONS = [
     {id:'gemelos_pie', name:'Gemelos de pie máquina', obs:'', rir:0, muscle:'Gemelos', sets:[{kg:null,reps:12,type:''},{kg:null,reps:12,type:''},{kg:null,reps:12,type:''}]},
     {id:'ext_rodilla_unilat', name:'Extensión rodilla máquina', obs:'Unilateral', rir:0, muscle:'Cuádriceps', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:'Fallo',type:'dropset'}]},
     {id:'curl_fem_sentado', name:'Curl femoral sentado', obs:'', rir:0, muscle:'Isquiosurales', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:'Fallo',type:'dropset'}]},
-    {id:'hip_thrust', name:'Hip thrust', obs:'', rir:0, muscle:'Glúteos', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
   ]},
   {id:'brazo', name:'Brazo', tag:'Movilidad · Brazo · Núcleo', exercises:[
     {id:'press_militar_manc', name:'Press militar mancuernas', obs:'', rir:0, muscle:'Hombro', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:8,type:''}]},
     {id:'dead_curl_brazo', name:'Dead curl banco scot', obs:'', rir:0, muscle:'Bíceps', sets:[{kg:null,reps:9,type:''},{kg:null,reps:7,type:''},{kg:null,reps:7,type:''}]},
     {id:'kaz_press', name:'Kaz press', obs:'', rir:1, muscle:'Tríceps', sets:[{kg:null,reps:9,type:''},{kg:null,reps:9,type:''},{kg:null,reps:8,type:''}]},
     {id:'lat_polea_brazo', name:'Elevaciones laterales polea', obs:'', rir:0, muscle:'Hombro', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:'Fallo',type:'dropset'}]},
-    {id:'predicador_manc', name:'Predicador unilateral mancuerna', obs:'', rir:0, muscle:'Bíceps', sets:[{kg:null,reps:9,type:''},{kg:null,reps:9,type:''},{kg:null,reps:7,type:''}]},
+    {id:'curl_martillo_brazo', name:'Curl martillo unilateral', obs:'', rir:0, muscle:'Bíceps', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:8,type:''}]},
     {id:'ext_triceps', name:'Extensión tríceps polea', obs:'', rir:0, muscle:'Tríceps', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:8,type:''}]},
     {id:'crunch_polea_b2', name:'Crunch abdominal polea', obs:'Núcleo — también válido en Pierna 1', rir:1, muscle:'Abdomen', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
     {id:'dragon_flag_b2', name:'Dragon flag', obs:'Núcleo — también válido en Pierna 1', rir:1, muscle:'Abdomen', sets:[{kg:null,reps:6,type:''},{kg:null,reps:6,type:''}]},
     {id:'pallof_b2', name:'Pallof press polea', obs:'Núcleo — también válido en Pierna 1', rir:1, muscle:'Abdomen', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
-    {id:'flex_ante_b2', name:'Flexores antebrazo polea', obs:'Núcleo — también válido en Pierna 1', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
-    {id:'ext_ante_b2', name:'Extensores antebrazo polea', obs:'Núcleo — también válido en Pierna 1', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
+    {id:'wrist_roller_b2', name:'Wrist roller', obs:'Rep = subida completa + bajada controlada. Alterna el sentido de giro entre series', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:1,type:''},{kg:null,reps:1,type:''},{kg:null,reps:1,type:''}]},
   ]},
   {id:'empuje2', name:'Empuje 2', tag:'Pecho · Hombro · Tríceps', exercises:[
     {id:'custom_1788182611607', name:'Serie Bilbo', obs:'', rir:0, muscle:'Pecho', sets:[{kg:null,reps:15,type:''}]},
@@ -918,7 +918,7 @@ const SEED_SESSIONS = [
     {id:'laterales_banco', name:'Laterales mancuernas banco', obs:'', rir:0, muscle:'Hombro', sets:[{kg:null,reps:9,type:''},{kg:null,reps:9,type:''},{kg:null,reps:'Fallo',type:'dropset'}]},
   ]},
   {id:'traccion2', name:'Tracción 2', tag:'Espalda · Bíceps · Núcleo', exercises:[
-    {id:'remo_prono', name:'Remo polea prono', obs:'', rir:1, muscle:'Espalda', sets:[{kg:null,reps:11,type:''},{kg:null,reps:11,type:''},{kg:null,reps:11,type:''}]},
+    {id:'remo_multi_pecho', name:'Remo multipower pecho apoyado', obs:'', rir:1, muscle:'Espalda', sets:[{kg:null,reps:8,type:''},{kg:null,reps:8,type:''},{kg:null,reps:8,type:''}]},
     {id:'jalon_neutro', name:'Jalón al pecho neutro', obs:'', rir:1, muscle:'Espalda', sets:[{kg:null,reps:7,type:''},{kg:null,reps:7,type:''},{kg:null,reps:7,type:''}]},
     {id:'dead_curl', name:'Dead curl banco scot', obs:'', rir:0, muscle:'Bíceps', sets:[{kg:null,reps:9,type:''},{kg:null,reps:7,type:''},{kg:null,reps:7,type:''}]},
     {id:'remo_dorian', name:'Remo dorian máquina unilateral', obs:'', rir:0, muscle:'Espalda', sets:[{kg:null,reps:9,type:''},{kg:null,reps:9,type:''},{kg:null,reps:'Fallo',type:'dropset'}]},
@@ -926,8 +926,7 @@ const SEED_SESSIONS = [
     {id:'crunch_polea_b3', name:'Crunch abdominal polea', obs:'Núcleo — también válido en Empuje 2', rir:1, muscle:'Abdomen', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
     {id:'dragon_flag_b3', name:'Dragon flag', obs:'Núcleo — también válido en Empuje 2', rir:1, muscle:'Abdomen', sets:[{kg:null,reps:6,type:''},{kg:null,reps:6,type:''}]},
     {id:'pallof_b3', name:'Pallof press polea', obs:'Núcleo — también válido en Empuje 2', rir:1, muscle:'Abdomen', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
-    {id:'flex_ante_b3', name:'Flexores antebrazo polea', obs:'Núcleo — también válido en Empuje 2', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
-    {id:'ext_ante_b3', name:'Extensores antebrazo polea', obs:'Núcleo — también válido en Empuje 2', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:10,type:''},{kg:null,reps:10,type:''},{kg:null,reps:10,type:''}]},
+    {id:'wrist_roller_b3', name:'Wrist roller', obs:'Rep = subida completa + bajada controlada. Alterna el sentido de giro entre series', rir:1, muscle:'Antebrazo', sets:[{kg:null,reps:1,type:''},{kg:null,reps:1,type:''},{kg:null,reps:1,type:''}]},
   ]},
   {id:'pierna2', name:'Pierna 2', tag:'Femoral · Cuádriceps · Gemelos', exercises:[
     {id:'peso_muerto_rum', name:'Peso muerto rumano prono', obs:'', rir:1, muscle:'Isquiosurales', sets:[{kg:null,reps:7,type:''},{kg:null,reps:7,type:''}]},
@@ -1082,7 +1081,9 @@ function ensureBilboState(app){
 let MIGRATION_V3_BLOCKED = false;
 function runMigrationsV3(app){
   ensureBilboState(app);
-  if (app.dataVersion >= DATA_VERSION) return [];
+  // Contra 3 fijo, no contra DATA_VERSION: con DATA_VERSION = 4 volvería a
+  // ejecutarse sobre datos v3 y los marcaría como v4 sin pasar por la v4.
+  if (app.dataVersion >= 3) return [];
   // Copia de lo que hay en disco antes de escribir nada. No se sobrescribe
   // nunca: la primera es la del estado real previo a la v3.
   const raw = localStorage.getItem('b26v2');
@@ -1119,8 +1120,71 @@ function runMigrationsV3(app){
   if (isObj(pm) && !pm[BILBO.empuje1] && Array.isArray(pm.press_banca)
       && pm.press_banca[0] && pm.press_banca[0].type === 'topset')
     pm[BILBO.empuje1] = [pm.press_banca.shift()];
-  app.dataVersion = DATA_VERSION;
+  app.dataVersion = 3;
   return ['serie Bilbo y bloque de tobillo'];
+}
+
+// ── MIGRACIÓN 4: CAMBIOS DE EJERCICIOS (fase 5) ───────────────
+// Por sesión: ids que se retiran y el ejercicio nuevo que ocupa la posición
+// del primero de ellos (add null = solo se retira). Los ids nuevos son propios:
+// prevMicro se indexa por id, así que nada hereda cargas. Los ids retirados no
+// se reutilizan nunca; su historial sigue en los snapshots tal cual.
+const WRIST_OBS = 'Rep = subida completa + bajada controlada. Alterna el sentido de giro entre series';
+const sets3 = reps => Array.from({length:3}, () => ({kg:null, reps, type:''}));
+const wristRoller = n => ({id:'wrist_roller_b'+n, name:'Wrist roller', obs:WRIST_OBS, rir:1, muscle:'Antebrazo', sets:sets3(1)});
+const V4_CHANGES = {
+  empuje1:  [{drop:['flex_ante_b1','ext_ante_b1'], add:() => wristRoller(1)}],
+  pierna1:  [{drop:['hip_thrust'], add:null}],
+  brazo:    [{drop:['predicador_manc'], add:() => ({id:'curl_martillo_brazo', name:'Curl martillo unilateral',
+               obs:'', rir:0, muscle:'Bíceps', sets:sets3(8)})},
+             {drop:['flex_ante_b2','ext_ante_b2'], add:() => wristRoller(2)}],
+  traccion2:[{drop:['remo_prono'], add:() => ({id:'remo_multi_pecho', name:'Remo multipower pecho apoyado',
+               obs:'', rir:1, muscle:'Espalda', sets:sets3(8)})},
+             {drop:['flex_ante_b3','ext_ante_b3'], add:() => wristRoller(3)}],
+};
+function v4Drops(sid){return (V4_CHANGES[sid] || []).reduce((a, ch) => a.concat(ch.drop), []);}
+// Series hechas en el micro en curso en algún ejercicio que se retira: la
+// sesión no se toca hasta el cierre (el snapshot la archiva tal cual).
+function v4Blocked(sess){
+  const drops = v4Drops(sess.id);
+  return (sess.exercises || []).some(ex => drops.includes(ex.id) && (ex.sets || []).some(st => st && st.done));
+}
+// Idempotente: si los retirados ya no están (migrada, o quitados a mano desde
+// el Editor) no hace nada; en el segundo caso tampoco inserta el nuevo.
+function applyV4Session(sess){
+  (V4_CHANGES[sess.id] || []).forEach(ch => {
+    const at = sess.exercises.findIndex(ex => ch.drop.includes(ex.id));
+    if (at < 0) return;
+    sess.exercises = sess.exercises.filter(ex => !ch.drop.includes(ex.id));
+    const nuevo = ch.add && ch.add();
+    if (nuevo && !sess.exercises.some(ex => ex.id === nuevo.id)) sess.exercises.splice(at, 0, nuevo);
+  });
+}
+function dropV4Prev(pm, sid){if (isObj(pm)) v4Drops(sid).forEach(id => {delete pm[id];});}
+let MIGRATION_V4_BLOCKED = false;
+function runMigrationsV4(app){
+  // Sin la v3 hecha (copia previa fallida) no se sigue
+  if (!(app.dataVersion >= 3) || app.dataVersion >= 4) return [];
+  const raw = localStorage.getItem('b26v2');
+  try{
+    if (raw !== null && localStorage.getItem(PRE_V4_KEY) === null){
+      localStorage.setItem(PRE_V4_KEY, raw);
+      if (localStorage.getItem(PRE_V4_KEY) !== raw) throw new Error();
+    }
+  }catch(e){ MIGRATION_V4_BLOCKED = true; return []; }
+
+  const pending = [];
+  Object.keys(V4_CHANGES).forEach(sid => {
+    // sessions null = se usará SEED_SESSIONS, que ya trae los ejercicios nuevos
+    const s = Array.isArray(app.sessions) ? app.sessions.find(x => x.id === sid) : null;
+    if (s && v4Blocked(s)){ pending.push(sid); return; }
+    if (s) applyV4Session(s);
+    dropV4Prev(app.prevMicro, sid);
+  });
+  // Se aplican en confirmClose(). Campo aditivo: al vaciarse queda [].
+  app.v4Pending = pending;
+  app.dataVersion = 4;
+  return [pending.length ? 'ejercicios nuevos (algunas sesiones, al cerrar el micro)' : 'ejercicios nuevos'];
 }
 
 let APP = ls('b26v2', null);
@@ -1132,7 +1196,7 @@ if (APP === null) {
   MIGRATION_NOTES = runMigrations(APP);
   const n3 = runMigrationsV3(APP);
   MIGRATED_V3 = n3.length > 0;
-  MIGRATION_NOTES = MIGRATION_NOTES.concat(n3);
+  MIGRATION_NOTES = MIGRATION_NOTES.concat(n3, runMigrationsV4(APP));
 }
 
 let sessions = APP.sessions
@@ -1955,6 +2019,13 @@ function confirmClose(){
   APP.prevMicro = np; APP.microNum++; APP.calObj = newCal;
   APP.log = {}; APP.dayCount = 0;
   sessions.forEach(s=>s.exercises.forEach(ex=>ex.sets.forEach(st=>{delete st.done; delete st.doneAt;})));
+  // Migración 4 aplazada: sesiones que tenían series hechas en ejercicios que
+  // se retiran. El snapshot de arriba ya las archivó tal cual; el micro nuevo
+  // empieza con los ejercicios nuevos y sin sus referencias en prevMicro.
+  if (Array.isArray(APP.v4Pending) && APP.v4Pending.length){
+    sessions.forEach(s => {if (APP.v4Pending.includes(s.id)){applyV4Session(s); dropV4Prev(APP.prevMicro, s.id);}});
+    APP.v4Pending = [];
+  }
   // La estructura de sesiones se conserva tal cual — incluidos los ejercicios
   // dados de alta o de baja desde el Editor. Los sets ya arrancan con los
   // valores del micro recién cerrado: prevMicro se acaba de construir de ahí.
@@ -2693,6 +2764,10 @@ function exportData(){
 // 2 lo aceptaría y al cerrar el micro vaciaría el log sin archivarlo.
 // Al importar un 1 se escribe tal cual y la migración v3 corre al recargar;
 // un 2 entra sin más: los campos nuevos son opcionales.
+// Los datos v4 (fase 5, cambios de ejercicios) siguen en schema 3: el sobre no
+// cambia y una app anterior ya los rechaza por dataVersion > su DATA_VERSION,
+// también si llegan pegados a mano sin sobre. Copias de cualquier schema se
+// migran al recargar (v3 y v4, con las mismas reglas que la actualización).
 const EXPORT_SCHEMA_VERSION = 3;
 function buildExport(){
   const raw = localStorage.getItem('b26v2');
@@ -2795,6 +2870,8 @@ function validateAppData(d){
     err.push('datos de una versión más nueva de la app (v'+d.dataVersion+')');
   if (d.bilbo !== undefined && (!isObj(d.bilbo) || (d.bilbo.events !== undefined && !Array.isArray(d.bilbo.events))))
     err.push('bilbo no tiene la forma esperada');
+  if (d.v4Pending !== undefined && !(Array.isArray(d.v4Pending) && d.v4Pending.every(x => typeof x === 'string')))
+    err.push('v4Pending no es una lista de sesiones');
   return err;
 }
 // Devuelve {data, raw, exportedAt} o lanza un Error con el motivo
@@ -2829,8 +2906,10 @@ function importText(text){
   if (bk.exportedAt) lineas.push('  · Exportada el ' + new Date(bk.exportedAt).toLocaleString('es-ES'));
   if (d.splitVersion !== SPLIT_VERSION)
     lineas.push('', 'La copia es de un split anterior: al cargar se migrará al actual.');
-  if (!(d.dataVersion >= DATA_VERSION))
+  if (!(d.dataVersion >= 3))
     lineas.push('', 'La copia es anterior a la serie Bilbo/tobillo: al cargar se migrará (mismo proceso que la actualización).');
+  if (!(d.dataVersion >= 4))
+    lineas.push('', 'La copia es anterior a los cambios de ejercicios (wrist roller, remo multipower, martillo en Brazo, sin hip thrust): al cargar se aplicarán. Una sesión con series hechas en un ejercicio retirado cambia al cerrar el micro.');
   lineas.push('', 'Ahora tienes M' + APP.microNum + ' con ' + (APP.snapshots||[]).length + ' archivados.',
               'El estado actual se guarda en ' + PREIMPORT_KEY + ' (sustituye a la copia de la importación anterior) y se puede recuperar con «Deshacer la última importación».',
               '', '¿Importar?');
@@ -3058,7 +3137,7 @@ document.addEventListener('keydown', e => {
 initMicroPage();
 registerSW();
 if (MIGRATION_NOTES.length) setTimeout(()=>showToast('Actualizado: ' + MIGRATION_NOTES[MIGRATION_NOTES.length-1]), 600);
-if (MIGRATION_V3_BLOCKED) setTimeout(()=>alert('No se pudo guardar la copia previa a la actualización de datos (¿almacenamiento lleno?), así que no se ha migrado nada: la app sigue con la estructura anterior.\n\nExporta una copia completa desde Editor y avisa antes de seguir.'), 700);
+if (MIGRATION_V3_BLOCKED || MIGRATION_V4_BLOCKED) setTimeout(()=>alert('No se pudo guardar la copia previa a la actualización de datos (¿almacenamiento lleno?), así que no se ha migrado nada: la app sigue con la estructura anterior.\n\nExporta una copia completa desde Editor y avisa antes de seguir.'), 700);
 try{
   const flash = sessionStorage.getItem('b26_flash');
   if (flash){ sessionStorage.removeItem('b26_flash'); setTimeout(()=>showToast(flash), 300); }
