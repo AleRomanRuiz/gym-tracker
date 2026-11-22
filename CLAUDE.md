@@ -13,11 +13,29 @@ fiable en standalone, la app se reanuda sin recargar, sin botón de recargar).
   borra). Toda migración: copia previa en una key de respaldo
   (`b26v2_backup_*`), comprobar la copia, abortar si falla, idempotente.
 - Respaldos existentes: `b26v2_backup_v1` (split), `b26v2_backup_prereset`,
-  `b26v2_backup_preimport`, `b26v2_backup_pre_v3`. No se sobrescriben los de
-  migración.
-- `APP.dataVersion` versiona la estructura (3 = Bilbo + tobillo);
-  `EXPORT_SCHEMA_VERSION` el sobre del archivo exportado (3 = pasos y
-  actividad). El importador debe seguir aceptando exportaciones antiguas.
+  `b26v2_backup_preimport`, `b26v2_backup_pre_v3`, `b26v2_backup_pre_v4`. No
+  se sobrescriben los de migración.
+- `APP.dataVersion` versiona la estructura (3 = Bilbo + tobillo; 4 = cambios
+  de ejercicios de la fase 5); `EXPORT_SCHEMA_VERSION` el sobre del archivo
+  exportado (3 = pasos y actividad; los datos v4 siguen en 3 porque el sobre no
+  cambia y una app vieja ya rechaza `dataVersion` mayor que el suyo). El
+  importador debe seguir aceptando exportaciones antiguas y migrarlas.
+- Cada guarda de migración compara con su número fijo (`>= 3`, `>= 4`), nunca
+  con `DATA_VERSION`: si no, al subirlo la migración anterior se repite.
+
+## Ejercicios: ids
+
+- `prevMicro` y la analítica se indexan por id de ejercicio: **un id no se
+  repite entre sesiones ni se reutiliza** después de retirarlo (aunque el
+  ejercicio se llame igual, p. ej. `curl_martillo` en Tracción 2 y
+  `curl_martillo_brazo` en Brazo).
+- Los cambios de la v4 están en `V4_CHANGES` (por sesión: ids retirados → id
+  nuevo en la posición del primero). Retirados: `predicador_manc`,
+  `flex_ante_b1-3`, `ext_ante_b1-3`, `hip_thrust`, `remo_prono`. Nuevos:
+  `curl_martillo_brazo`, `wrist_roller_b1-3`, `remo_multi_pecho`.
+- Al retirar ejercicios, snapshots y logs archivados no se tocan. Si la sesión
+  tiene series hechas en un ejercicio que se retira, no se migra en ese micro:
+  queda en `APP.v4Pending` y se aplica en `confirmClose()` tras archivarla.
 
 ## Log diario, pasos y actividad (fase 4)
 
